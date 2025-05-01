@@ -1,0 +1,73 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Family {
+  id Int @id @default(autoincrement())
+  name String // wenn kein ? dann ist es ein Pflichtfeld
+  members User[] @relation("FamilyMembers") // One-to-Many Beziehung
+  email String @unique // needed for verification or restoring
+  phone String @unique // needed for verification or restoring
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  verified Boolean @default(false)
+
+  isDeleted Boolean @default(false)
+  deletedAt DateTime?
+  deletedBy Int? // userId
+  deleteReason String?
+
+  deactivated Boolean @default(false)
+}
+
+model User {
+  id Int @id @default(autoincrement())
+  firstName String
+  secondName String? // not everyone has a second name
+  lastName String
+  username String
+  email String @unique
+  phone String? // not neessary for child
+  password String // hashed password
+  birthdate DateTime? // optional when parent dont want to give to for childs to the app
+
+  role ROLE @default(CHILD)
+  hubId Int? // educator may not have a family yet or multiple
+  family Family? @relation("FamilyMembers", fields: [hubId], references: [id]) // One-to-Many Beziehung
+
+    
+  verified Boolean @default(false) // to check if the user has verified his email
+
+  online Boolean @default(false)
+  lastTimeOnline DateTime? // last time the user was online
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  isDeleted Boolean @default(false)
+  deletedAt DateTime?
+  deletedBy Int?
+  deleteReason String?
+
+  deactivated Boolean @default(false)
+}
+
+enum ROLE {
+  CHILD
+  PARENT
+  EDUCATOR
+  ADULT
+}
