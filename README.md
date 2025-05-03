@@ -38,7 +38,7 @@ $ npm install
 $ npm run start
 
 # watch mode
-$ npm run start:dev
+$ npm run dev # start nodemon
 
 # production mode
 $ npm run start:prod
@@ -83,16 +83,18 @@ Check out a few resources that may come in handy when working with NestJS:
 - To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
 - Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
 
-## Support
+# author
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+- [Norman R. Tetzlaff](https://www.linkedin.com/in/norman-tetzlaff-ab5955332/)
 
-## Stay in touch
+# Used technologies
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+- the whole project is written in TypeScript in NestJS
+- i used prisma to connect to postgres
+- i used argon to hash passwords, thats newer and better than bcrypt
+- i used class validator to validate the DTOs
+- i used class transformer to transform the DTOs
 
-## License
+# in planning:
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+Global über nestjs/throttler (Rate Limit pro IP-Adresse)

@@ -1,14 +1,9 @@
-import { Controller, Post, Body, Get } from '@nestjs/common';
+import { Controller, Post, Get, Body, UsePipes } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { Req } from '@nestjs/common';
-import { Request } from 'express';
+import { FamilyRegisterDto } from './dto/fam-register.dto';
+import { TrimPipe } from 'src/common/pipes/trim.pipe';
 
-interface AuthRequest {
-  user: {
-    id: string;
-  };
-}
-
+@UsePipes(TrimPipe)
 @Controller('auth')
 /**
  * @description AuthController is responsible for handling authentication requests
@@ -16,11 +11,10 @@ interface AuthRequest {
  */
 export class AuthController {
   constructor(private authService: AuthService) {}
-
   @Post('register')
   // we use any only as a placeholder, we dont have the real User DTO (DTO = Data Transfer Object) yet
-  register() {
-    return this.authService.register();
+  register(@Body() dto: FamilyRegisterDto) {
+    return this.authService.register(dto);
   }
 
   @Post('login')
@@ -42,9 +36,7 @@ export class AuthController {
   async verifyEmail() {}
 
   @Get('me')
-  getMe(@Req() req: Request & AuthRequest) {
-    return req.user;
-  }
+  getMe() {}
 
   @Post('deleteUser')
   // delete user will be a soft delete, we will not remove the user from the database
