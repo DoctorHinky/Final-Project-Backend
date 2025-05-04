@@ -1,10 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* ich musste hier alles abschalten da eslint sich nicht beruhigen lassen hat */
-
 import zxcvbn from 'zxcvbn';
-import type { ZXCVBNResult } from 'zxcvbn';
 
 import {
   registerDecorator,
@@ -24,11 +18,11 @@ export function IsStrongPasswordZXCVBN(
       options: validationOptions,
       validator: {
         validate(val: any) {
-          const result = zxcvbn(val) as ZXCVBNResult;
+          const result = zxcvbn(val as string);
           return result.score >= minScore;
         },
         defaultMessage(args: ValidationArguments) {
-          const result = zxcvbn(args.value);
+          const result = zxcvbn(args.value as string);
           const warning = result.feedback.warning || '';
           const suggestions = result.feedback.suggestions?.join(', ') || '';
           return `Password is too weak. ${warning} ${suggestions}`;

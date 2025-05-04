@@ -10,7 +10,6 @@ export class FamilyRegisterDto {
 
   @IsEmail()
   @IsNotEmpty()
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   @Transform(({ value }: { value: string }) => value?.toLowerCase())
   @IsNotTempMail({ message: 'Temporary email addresses are not allowed' })
   email: string;
