@@ -29,6 +29,9 @@
 
 ```bash
 $ npm install
+
+$ docker-compose up -d # started isoliert die Container -> test und dev
+# zu beachten das notwendige programme installiert werden müssen
 ```
 
 ## Compile and run the project

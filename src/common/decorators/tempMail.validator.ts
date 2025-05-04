@@ -11,7 +11,7 @@ import * as path from 'path';
 export class IsNotTempMailContraint implements ValidatorConstraintInterface {
   private tempMailDomains: string[] = [];
   constructor() {
-    const filePath = path.join(__dirname, '..', 'data', 'tempMails.json');
+    const filePath = path.join(__dirname, '../..', 'data', 'tempMails.json');
 
     try {
       const content = fs.readFileSync(filePath, 'utf-8');
