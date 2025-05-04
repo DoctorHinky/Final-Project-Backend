@@ -1,4 +1,4 @@
-import zxcvbn from 'zxcvbn';
+import * as zxcvbn from 'zxcvbn';
 
 import {
   registerDecorator,
