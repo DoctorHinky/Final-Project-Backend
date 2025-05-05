@@ -32,6 +32,9 @@ $ npm install
 
 $ docker-compose up -d # started isoliert die Container -> test und dev
 # zu beachten das notwendige programme installiert werden müssen
+
+$ npx prisma migrate dev --name init
+
 ```
 
 ## Compile and run the project
