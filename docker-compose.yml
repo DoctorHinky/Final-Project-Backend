@@ -11,5 +11,16 @@ services:
     networks:
       # das ist ein freier name des netzwerkes
       - monster-ag
+
+  postgres-test:
+    image: postgres:13
+    ports:
+      - 5435:5432
+    environment:
+      POSTGRES_USER: postgre_test_user
+      POSTGRES_PASSWORD: postgre_test_pass
+      POSTGRES_DB: postgre_test_db
+    networks:
+      - monster-ag
 networks:
   monster-ag:
