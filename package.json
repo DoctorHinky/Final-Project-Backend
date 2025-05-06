@@ -19,7 +19,7 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "dotenv -e .env.test -- jest --config jest.config.ts",
+    "test:e2e": "cross-env NODE_ENV=test jest --config jest.config.ts",
     "migrate:test": "dotenv -e .env.test -- npx prisma migrate deploy"
   },
   "dependencies": {
@@ -51,6 +51,7 @@
     "@types/node": "^22.10.7",
     "@types/supertest": "^6.0.2",
     "@types/zxcvbn": "^4.4.5",
+    "cross-env": "^7.0.3",
     "dotenv-cli": "^8.0.0",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
