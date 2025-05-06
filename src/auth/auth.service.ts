@@ -1,32 +1,38 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { hashPassword } from './utils/password.utils';
-import { FamilyRegisterDto } from './dto/fam-register.dto';
+import { RegisterDto } from './dto/auth.register.dto';
+import { UserRoles } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
   constructor(private prisma: PrismaService) {}
 
-  async register(family: FamilyRegisterDto) {
-    const { name, email, phone, password } = family;
-    // check if the family already exists
-    const emailInUse = await this.prisma.family.findFirst({
+  async register(user: RegisterDto) {
+    const { username, firstname, lastname, birthdate, email, phone, password } =
+      user;
+    // check if the User already exists
+    const emailInUse = await this.prisma.user.findFirst({
       where: { email: email },
     });
-    const phoneInUse = await this.prisma.family.findFirst({
+    const phoneInUse = await this.prisma.user.findFirst({
       where: { phone: phone },
     });
     if (emailInUse || phoneInUse) {
       return { message: 'this phone number or email are already in use' };
     }
-
-    // create the family
+    user.role = user.role === 'CHILD' ? UserRoles.CHILD : UserRoles.ADULT;
+    // create the User
     const hashedPassword = await hashPassword(password);
-    family.password = hashedPassword;
+    user.password = hashedPassword;
 
-    const newFamily = await this.prisma.family.create({
+    const newUser = await this.prisma.user.create({
       data: {
-        name,
+        username,
+        firstname,
+        lastname,
+        birthdate: new Date(birthdate),
+        role: user.role as UserRoles,
         email,
         phone,
         password: hashedPassword,
@@ -34,12 +40,16 @@ export class AuthService {
     });
 
     return {
-      message: 'the family is registered',
-      family: {
-        id: newFamily.id,
-        name: newFamily.name,
-        email: newFamily.email,
-        phone: newFamily.phone,
+      message: 'new User is created',
+      user: {
+        id: newUser.id,
+        username: newUser.username,
+        firstname: newUser.firstname,
+        lastname: newUser.lastname,
+        birthdate: newUser.birthdate,
+        role: newUser.role,
+        email: newUser.email,
+        phone: newUser.phone,
       },
     };
   }

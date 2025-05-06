@@ -1,7 +1,7 @@
 import { IsString, IsNotEmpty } from 'class-validator';
-import { BaseFamilyDto } from './auth.base.dto';
+import { BaseAuthDto } from './auth.base.dto';
 
-export class FamilyLoginDto extends BaseFamilyDto {
+export class LoginDto extends BaseAuthDto {
   @IsString()
   @IsNotEmpty()
   password: string;

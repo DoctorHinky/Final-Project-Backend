@@ -87,6 +87,7 @@ model User {
   moderatedAt     DateTime? // hier wird dann eingetragen wann der Moderator angenommen wurde
   moderatedUsers User[] @relation("ModeratedByUser")
   handelTickets   Ticket[] @relation("WorkedByUser") // hier werden alle Tickets gespeichert
+
 }
 
 enum UserRoles {
