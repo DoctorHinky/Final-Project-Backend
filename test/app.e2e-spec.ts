@@ -20,27 +20,35 @@ describe('AppController (e2e)', () => {
   });
 
   afterAll(async () => {
-    await prisma.family.deleteMany({});
+    await prisma.user.deleteMany({});
     await app.close();
     await prisma.$disconnect();
   });
 
   it('/auth/register (POST)', async () => {
     const res = await request(app.getHttpServer()).post('/auth/register').send({
-      name: 'streber',
-      email: 'streber@gmail.com',
+      firstname: 'billy',
+      lastname: 'bolly',
+      username: 'billy bolly',
+      birthdate: '2007-01-01',
+      role: 'CHILD',
+      email: 'bill.bolly@gmail.com',
       phone: '049017612345678',
       password: 'Gr33nFr0g#s4v3',
     });
 
     expect(res.status).toBe(201);
     expect(res.body).toEqual({
-      message: 'the family is registered',
-      family: {
+      message: 'new User is created',
+      user: {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         id: expect.any(Number),
-        name: 'streber',
-        email: 'streber@gmail.com',
+        firstname: 'billy',
+        lastname: 'bolly',
+        username: 'billy bolly',
+        birthdate: '2007-01-01T00:00:00.000Z',
+        role: 'CHILD',
+        email: 'bill.bolly@gmail.com',
         phone: '049017612345678',
       },
     });
