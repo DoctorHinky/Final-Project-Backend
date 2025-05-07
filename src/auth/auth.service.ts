@@ -40,20 +40,22 @@ export class AuthService {
         phone,
         password: hashedPassword,
       },
+      select: {
+        id: true,
+        username: true,
+        firstname: true,
+        lastname: true,
+        birthdate: true,
+        role: true,
+        email: true,
+        phone: true,
+        password: false,
+      },
     });
 
     return {
       message: 'new User is created',
-      user: {
-        id: newUser.id,
-        username: newUser.username,
-        firstname: newUser.firstname,
-        lastname: newUser.lastname,
-        birthdate: newUser.birthdate,
-        role: newUser.role,
-        email: newUser.email,
-        phone: newUser.phone,
-      },
+      user: newUser,
     };
   }
   async login(user: LoginDto) {
