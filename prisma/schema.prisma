@@ -23,7 +23,7 @@ model User {
 
   // UserFile relation - fixed one-to-one relation
   userFile        UserFile? // bidirectional one-to-one relation
-  userFileId      String? @unique // wird angelegt wenn beschwerden gegen einen User vorliegen - must be unique for one-to-one
+  userFileId      String? @unique @db.Uuid // wird angelegt wenn beschwerden gegen einen User vorliegen - must be unique for one-to-one
 
   // Relations
   // Bidirektionale Freundschaft: explizit zwei Seiten definieren (self relation!)
@@ -58,15 +58,15 @@ model User {
   moderatedComments Comment[] @relation("ModeratorComment") // wenn ein Moderator einen Kommentar moderiert
 
   // Admin Meta
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
   verified        Boolean     @default(false) // means this user has verified his email
 
   // deletions
   isDeleted       Boolean     @default(false)
   deletedAt       DateTime?
-  deletedBy       String? // userId -> hier wird dann eingetragen wer den User gelöscht hat
+  deletedBy       String?     @db.Uuid// userId -> hier wird dann eingetragen wer den User gelöscht hat
   deletedByUser   User?       @relation("UserDeletedBy", fields: [deletedBy], references: [id]) // userId -> hier wird dann eingetragen welcher moderator den User gelöscht hat
   deleteReason    String?
   deactivated     Boolean     @default(false)
@@ -79,16 +79,16 @@ model User {
 
   // hier wird dann eingetragen ob er sich beworben hat, ob er angenommen wurde, ob er abgelehnt wurde (Bewerbung, angenommen, abgelehnt)
   status          ApplicationStatus @default(PENDING) // Bewerbung, angenommen, abgelehnt
-  authorizedBy    String? @db.Uuid// userId -> hier wird dann eingetragen wer den Autor angenommen hat
+  authorizedBy    String?           @db.Uuid // userId -> hier wird dann eingetragen wer den Autor angenommen hat
   authorizedAt    DateTime? // hier wird dann eingetragen wann der Autor angenommen wurde
   denyingReason   String? // hier wird dann eingetragen warum der Autor abgelehnt wurde
 
   // besonderheiten für Moderatoren
-  moderatedBy     String? @db.Uuid // userId -> hier wird dann eingetragen wer den Moderator angenommen hat
-  moderatedByUser User? @relation("ModeratedByUser", fields: [moderatedBy], references: [id]) // hier geht um bearbeitete Profile
+  moderatedBy     String?     @db.Uuid // userId -> hier wird dann eingetragen wer den Moderator angenommen hat
+  moderatedByUser User?       @relation("ModeratedByUser", fields: [moderatedBy], references: [id]) // hier geht um bearbeitete Profile
   moderatedAt     DateTime? // hier wird dann eingetragen wann der Moderator angenommen wurde
-  moderatedUsers User[] @relation("ModeratedByUser")
-  handelTickets   Ticket[] @relation("WorkedByUser") // hier werden alle Tickets gespeichert
+  moderatedUsers  User[]      @relation("ModeratedByUser")
+  handelTickets   Ticket[]    @relation("WorkedByUser") // hier werden alle Tickets gespeichert
 
 }
 
@@ -109,10 +109,10 @@ enum ApplicationStatus {
 }
 
 model Friendship {
-  id            String @id @default(uuid()) @db.Uuid
+  id            String  @id @default(uuid()) @db.Uuid
   
-  initiatorId  String @db.Uuid
-  receiverId    String @db.Uuid
+  initiatorId   String  @db.Uuid
+  receiverId    String  @db.Uuid
 
   initiator    User @relation("Initiator", fields: [initiatorId], references: [id]) // userId -> hier wird dann eingetragen wer die Anfrage gesendet hat
   receiver      User @relation("Receiver", fields: [receiverId], references: [id]) // userId -> hier wird dann eingetragen wer die Anfrage empfangen hat

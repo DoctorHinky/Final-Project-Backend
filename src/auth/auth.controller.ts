@@ -1,7 +1,8 @@
 import { Controller, Post, Get, Body, UsePipes } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { FamilyRegisterDto } from './dto/fam-register.dto';
+import { RegisterDto } from './dto/auth.register.dto';
 import { TrimPipe } from 'src/common/pipes/trim.pipe';
+import { LoginDto } from './dto/auth.login.dto';
 
 @UsePipes(TrimPipe)
 @Controller('auth')
@@ -13,13 +14,15 @@ export class AuthController {
   constructor(private authService: AuthService) {}
   @Post('register')
   // we use any only as a placeholder, we dont have the real User DTO (DTO = Data Transfer Object) yet
-  register(@Body() dto: FamilyRegisterDto) {
+  register(@Body() dto: RegisterDto) {
+    console.log('register', dto);
     return this.authService.register(dto);
   }
 
   @Post('login')
-  login() {
-    return this.authService.login();
+  login(@Body() loginDto: LoginDto) {
+    console.log('login', loginDto);
+    return this.authService.login(loginDto);
   }
 
   @Post('passwordChange')
