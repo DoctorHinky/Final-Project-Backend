@@ -35,6 +35,7 @@ $ docker-compose up -d # started isoliert die Container -> test und dev
 
 $ npx prisma migrate dev --name init
 
+$ npx prisma studio # um die Datenbank zu sehen
 ```
 
 ## Compile and run the project
