@@ -2,6 +2,7 @@ import { Controller, Post, Get, Body, UsePipes } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/auth.register.dto';
 import { TrimPipe } from 'src/common/pipes/trim.pipe';
+import { LoginDto } from './dto/auth.login.dto';
 
 @UsePipes(TrimPipe)
 @Controller('auth')
@@ -19,8 +20,8 @@ export class AuthController {
   }
 
   @Post('login')
-  login() {
-    return this.authService.login();
+  login(@Body() dto: LoginDto) {
+    return this.authService.login(dto);
   }
 
   @Post('passwordChange')
