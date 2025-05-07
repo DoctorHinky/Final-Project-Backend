@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { hashPassword } from './utils/password.utils';
 import { RegisterDto } from './dto/auth.register.dto';
@@ -19,7 +19,9 @@ export class AuthService {
       where: { phone: phone },
     });
     if (emailInUse || phoneInUse) {
-      return { message: 'this phone number or email are already in use' };
+      throw new BadRequestException(
+        'This phone number or email is already in use',
+      );
     }
     user.role = user.role === 'CHILD' ? UserRoles.CHILD : UserRoles.ADULT;
     // create the User
