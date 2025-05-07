@@ -13,5 +13,5 @@ export async function verifyPassword(
   hash: string,
   password: string,
 ): Promise<boolean> {
-  return argon.verify(hash, password);
+  return argon.verify(password, hash);
 }
