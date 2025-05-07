@@ -20,8 +20,9 @@ export class AuthController {
   }
 
   @Post('login')
-  login(@Body() dto: LoginDto) {
-    return this.authService.login(dto);
+  login(@Body() loginDto: LoginDto) {
+    console.log('login', loginDto);
+    return this.authService.login(loginDto);
   }
 
   @Post('passwordChange')

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   UnauthorizedException,
@@ -6,7 +7,7 @@ import {
 import { PrismaService } from 'src/prisma/prisma.service';
 import { hashPassword, verifyPassword } from './utils/password.utils';
 import { RegisterDto } from './dto/auth.register.dto';
-import { UserRoles, Prisma } from '@prisma/client';
+import { UserRoles, Prisma, User } from '@prisma/client';
 import { LoginDto } from './dto/auth.login.dto';
 
 @Injectable()
@@ -64,18 +65,32 @@ export class AuthService {
   async login(user: LoginDto) {
     const { username, email, password } = user;
 
-    const dbUser = await this.prisma.user.findFirst({
-      where: {
-        OR: [{ username: username }, { email: email }],
-      },
-    });
+    if (!username && !email) {
+      throw new BadRequestException('email or username is required');
+    }
+
+    let dbUser: User | null = null;
+
+    if (username) {
+      dbUser = await this.prisma.user.findUnique({
+        where: {
+          username,
+        },
+      });
+    } else if (email) {
+      dbUser = await this.prisma.user.findUnique({
+        where: {
+          email,
+        },
+      });
+    }
     if (!dbUser) throw new UnauthorizedException('Invalid credentials');
 
     const passwordCheck = await verifyPassword(password, dbUser.password);
 
     if (!passwordCheck) throw new UnauthorizedException('Invalid credentials');
 
-    return 'hallo';
+    return 'erfolgreicher Login';
   }
   passwordChange() {}
   passwordReset() {}

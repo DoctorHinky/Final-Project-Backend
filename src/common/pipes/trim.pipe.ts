@@ -1,17 +1,14 @@
-import {
-  PipeTransform,
-  Injectable,
-  ArgumentMetadata,
-  BadRequestException,
-} from '@nestjs/common';
+import { PipeTransform, Injectable, ArgumentMetadata } from '@nestjs/common';
 
 @Injectable()
 export class TrimPipe implements PipeTransform {
   transform(
     value: any,
     metadata: ArgumentMetadata,
-  ): string | object | string[] {
-    if (typeof value === 'string') {
+  ): string | object | string[] | undefined {
+    if (value === undefined) {
+      return undefined;
+    } else if (typeof value === 'string') {
       return value.trim();
     } else if (Array.isArray(value)) {
       // hier wird jeder string nochmal rekursiv getrimmt
@@ -26,6 +23,5 @@ export class TrimPipe implements PipeTransform {
       }
       return trimmedObject;
     }
-    throw new BadRequestException('Invalid input type');
   }
 }
