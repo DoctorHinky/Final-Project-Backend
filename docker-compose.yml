@@ -8,6 +8,8 @@ services:
       PORTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
     networks:
       # das ist ein freier name des netzwerkes
       - monster-ag
@@ -24,3 +26,6 @@ services:
       - monster-ag
 networks:
   monster-ag:
+
+volumes:
+  pgdata:
