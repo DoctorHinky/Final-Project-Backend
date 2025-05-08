@@ -1,8 +1,19 @@
-import { Controller, Post, Get, Body, UsePipes } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  UsePipes,
+  UseGuards,
+  HttpStatus,
+  HttpCode,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { RegisterDto } from './dto/auth.register.dto';
 import { TrimPipe } from 'src/common/pipes/trim.pipe';
-import { LoginDto } from './dto/auth.login.dto';
+import { Tokens } from './types/token.type';
+import { LoginDto, RegisterDto } from './dto';
+import { AtGuard, RtGuard } from 'src/common/guards';
+import { getCurrentUser, PublicRoute } from 'src/common/decorators';
 
 @UsePipes(TrimPipe)
 @Controller('auth')
@@ -12,17 +23,35 @@ import { LoginDto } from './dto/auth.login.dto';
  */
 export class AuthController {
   constructor(private authService: AuthService) {}
-  @Post('register')
-  // we use any only as a placeholder, we dont have the real User DTO (DTO = Data Transfer Object) yet
-  register(@Body() dto: RegisterDto) {
-    console.log('register', dto);
-    return this.authService.register(dto);
+
+  @PublicRoute()
+  @Post('local/register')
+  async localRegister(@Body() dto: RegisterDto): Promise<Tokens | void> {
+    return await this.authService.localRegister(dto);
   }
 
-  @Post('login')
-  login(@Body() loginDto: LoginDto) {
-    console.log('login', loginDto);
-    return this.authService.login(loginDto);
+  @PublicRoute()
+  @Post('local/login')
+  async localLogin(@Body() loginDto: LoginDto): Promise<Tokens | void> {
+    return await this.authService.localLogin(loginDto);
+  }
+
+  @UseGuards(AtGuard)
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  logout(@getCurrentUser('id') userId: string) {
+    return this.authService.logout(userId);
+  }
+
+  @PublicRoute()
+  @UseGuards(RtGuard)
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  refreshTokens(
+    @getCurrentUser('refreshToken') refreshToken: string,
+    @getCurrentUser('id') userId: string,
+  ) {
+    return this.authService.refreshTokens(userId, refreshToken);
   }
 
   @Post('passwordChange')

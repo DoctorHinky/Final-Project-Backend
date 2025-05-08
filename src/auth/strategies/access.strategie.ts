@@ -14,14 +14,12 @@ export class AccessStrategy extends PassportStrategy(Strategy, 'jwt') {
 
   validate(payload: any) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-    return {
-      ...payload,
-      // we can add more data to the payload if needed
-      // for example, we can add the user id or any other data
-      // that we want to use in the application
-      // userId: payload.sub,
-      // email: payload.email,
-      // role: payload.role,
-    };
+    return payload;
+    // we can add more data to the payload if needed
+    // for example, we can add the user id or any other data
+    // that we want to use in the application
+    // userId: payload.sub,
+    // email: payload.email,
+    // role: payload.role,
   }
 }

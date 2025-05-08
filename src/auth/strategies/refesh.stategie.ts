@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
@@ -17,8 +19,9 @@ export class RefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {
   validate(req: Request, payload: any) {
     const refreshToken = req.get('authorization')?.replace('Bearer', '').trim();
     return {
-      ...payload,
+      id: payload.userId,
       refreshToken,
+      role: payload.role,
       // we can add more data to the payload if needed
       // for example, we can add the user id or any other data
       // that we want to use in the application
