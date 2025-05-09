@@ -159,9 +159,8 @@ export class AuthService {
     });
 
     if (!user || !user.hashedRefreshToken) {
-      throw new ForbiddenException('User not found');
+      throw new ForbiddenException('Access denied');
     }
-
     const refreshTokenMatches = await verifyPassword(
       refreshToken,
       user.hashedRefreshToken,
@@ -178,12 +177,8 @@ export class AuthService {
     return newTokens;
   }
 
-  passwordChange() {}
   passwordReset() {}
   verifyEmail() {}
-  getMe() {}
-  deleteUser() {}
-  restoreUser() {}
 
   // this are helper functions that not actually belong to the service isself
   async updateRtHash(userId: string, refreshToken: string) {
