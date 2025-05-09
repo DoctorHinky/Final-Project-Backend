@@ -5,6 +5,7 @@ import { Authmodule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { AtGuard } from './common/guards';
+import { SeedModule } from 'Admins/Seeder.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { AtGuard } from './common/guards';
     Authmodule,
     UserModule,
     PrismaModule,
+    SeedModule,
   ],
   providers: [{ provide: 'APP_GUARD', useClass: AtGuard }],
 })
