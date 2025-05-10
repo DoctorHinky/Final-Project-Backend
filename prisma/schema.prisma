@@ -20,6 +20,8 @@ model User {
   password        String // hashed password
   hashedRefreshToken String? // hashed refresh token
   profilePicture  String? // optional | claudinary
+  shortDescription String? // optional
+  bio             String? // optional
 
   // UserFile relation - fixed one-to-one relation
   userFile        UserFile? // bidirectional one-to-one relation
