@@ -3,7 +3,11 @@ import { config } from 'dotenv';
 import { UserRoles } from '@prisma/client';
 import { hashPassword } from 'src/auth/utils/password.utils';
 import { PrismaService } from 'src/prisma/prisma.service';
-config({ path: '.env.admin' });
+import { existsSync } from 'fs';
+
+if (existsSync('.env.admin')) {
+  config({ path: '.env.admin' }); // nur local
+}
 
 @Injectable()
 export class SeedService {
