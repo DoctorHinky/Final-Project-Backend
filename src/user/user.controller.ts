@@ -1,5 +1,8 @@
-import { Controller, Delete, Get, Patch, Post } from '@nestjs/common';
+import { Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
 import { UserService } from './user.service';
+import { UserRoles } from '@prisma/client';
+import { RequiredRoles } from 'src/common/decorators/roles.decorator';
+import { getCurrentUser } from 'src/common/decorators';
 
 @Controller('user')
 
@@ -10,22 +13,28 @@ import { UserService } from './user.service';
 export class UserController {
   constructor(private userService: UserService) {}
 
-  @Get('getUserById/:userid')
-  getUserById() {
-    return this.userService.getUserById();
+  @Get('getUserById/:userId')
+  getUserById(
+    @Param('userId') targetId: string,
+    @getCurrentUser('role') role: UserRoles,
+  ) {
+    return this.userService.getUserById(role, targetId);
   }
 
+  @RequiredRoles(UserRoles.ADMIN, UserRoles.MODERATOR)
   @Get('getAllUsers')
-  getAllUsers() {
-    return this.userService.getAllUsers();
+  getAllUsers(@getCurrentUser('role') role: UserRoles) {
+    return this.userService.getAllUsers(role);
   }
 
   @Get('getMe')
-  getMe() {
-    return this.userService.getMe();
+  getMe(@getCurrentUser('id') userId: string) {
+    return this.userService.getMe(userId);
   }
 
-  // hier müssen alles update Funktionen rein für Admins, Moderator und User
+  @Patch('updateMe')
+
+  // hier müssen alles update Funktionen rein für Admins und Moderator
   @Patch('updateUser')
   updateUser() {
     return this.userService.updateUser();

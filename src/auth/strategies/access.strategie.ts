@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
@@ -13,8 +15,10 @@ export class AccessStrategy extends PassportStrategy(Strategy, 'jwt') {
   }
 
   validate(payload: any) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-    return payload;
+    return {
+      id: payload.userId,
+      roles: payload.role,
+    };
     // we can add more data to the payload if needed
     // for example, we can add the user id or any other data
     // that we want to use in the application
