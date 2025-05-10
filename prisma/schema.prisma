@@ -15,7 +15,7 @@ model User {
   lastname        String // wenn kein ? dann ist es ein Pflichtfeld
   birthdate       DateTime
   email           String @unique // needed for verification or restoring
-  phone           String // for 2FA // hier wird eine Blacklist angelegt zur Blockierung von Account
+  phone           String @unique // for 2FA // hier wird eine Blacklist angelegt zur Blockierung von Account
   role            UserRoles @default(ADULT)
   password        String // hashed password
 
@@ -50,6 +50,7 @@ model User {
   publishedPosts Post[] @relation("PublishedByUser") // veröffentlichte Posts
   writtenComments  Comment[] @relation("UserComments") // geschriebene Kommentare
   writtenRatings Rating[] @relation("UserRatings") // geschriebene Bewertungen
+  readPosts       ReadPost[]
 
   // Articles, Posts (written / moderated)
   moderatedPosts   Post[] @relation("ModeratorPosts") // wenn ein Moderator einen Post moderiert
@@ -205,6 +206,8 @@ model Post {
   moderatorId    Int?
   moderator      User? @relation("ModeratorPosts", fields: [moderatorId], references: [id])
 
+  readByUser ReadPost[]
+
   published      Boolean @default(false)
   publishedAt    DateTime?
   publishedBy    Int? // userId
@@ -223,6 +226,18 @@ model Post {
 
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+}
+
+model ReadPost {
+  id String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+  user User @relation(fields: [userId], references: [id])
+
+  postId String @db.Uuid
+  post Post @relation(fields: [postId], references: [id])
+  readAt DateTime @default(now())
+
+  @@unique([userId, postId]) // unique constraint to avoid duplicates
 }
 
 model Comment {
