@@ -6,7 +6,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { existsSync } from 'fs';
 
 if (existsSync('.env.admin')) {
-  config({ path: '.env.admin' }); // nur local
+  config({ path: '.env.admin' }); // nur local gibt es eine .env.admin
 }
 
 @Injectable()
