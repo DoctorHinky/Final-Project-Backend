@@ -41,4 +41,4 @@ RUN npx prisma generate
 # Expose the port the app runs on
 EXPOSE 4001
 
-CMD [ "node", "dist/main" ]
+CMD [ "node", "dist/src/main.js" ]
