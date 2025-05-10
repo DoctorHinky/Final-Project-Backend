@@ -1,17 +1,24 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaClient } from '@prisma/client';
 
 @Injectable()
 export class PrismaService extends PrismaClient {
-  constructor() {
-    // the folling line is not a comment, it deacativates the eslint rule but only for the next line
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+  constructor(config: ConfigService) {
     super({
       datasources: {
         db: {
-          url: process.env.DATABASE_URL as string,
+          // beachte das in render die DATABASE_URL
+          url: config.get('DATABASE_URL'),
         },
       },
     });
+  }
+  async onModuleInit() {
+    await this.$connect();
+  }
+
+  async onModuleDestroy() {
+    await this.$disconnect();
   }
 }

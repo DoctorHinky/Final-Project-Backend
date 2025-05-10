@@ -12,7 +12,7 @@ CREATE TYPE "TicketStatus" AS ENUM ('OPEN', 'CLOSED', 'IN_PROGRESS');
 
 -- CreateTable
 CREATE TABLE "User" (
-    "id" SERIAL NOT NULL,
+    "id" UUID NOT NULL,
     "username" TEXT NOT NULL,
     "firstname" TEXT NOT NULL,
     "lastname" TEXT NOT NULL,
@@ -21,22 +21,24 @@ CREATE TABLE "User" (
     "phone" TEXT NOT NULL,
     "role" "UserRoles" NOT NULL DEFAULT 'ADULT',
     "password" TEXT NOT NULL,
-    "userFileId" INTEGER,
-    "parent1Id" INTEGER,
-    "parent2Id" INTEGER,
+    "hashedRefreshToken" TEXT,
+    "profilePicture" TEXT,
+    "userFileId" UUID,
+    "parent1Id" UUID,
+    "parent2Id" UUID,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "verified" BOOLEAN NOT NULL DEFAULT false,
     "isDeleted" BOOLEAN NOT NULL DEFAULT false,
     "deletedAt" TIMESTAMP(3),
-    "deletedBy" INTEGER,
+    "deletedBy" UUID,
     "deleteReason" TEXT,
     "deactivated" BOOLEAN NOT NULL DEFAULT false,
     "status" "ApplicationStatus" NOT NULL DEFAULT 'PENDING',
-    "authorizedBy" INTEGER,
+    "authorizedBy" UUID,
     "authorizedAt" TIMESTAMP(3),
     "denyingReason" TEXT,
-    "moderatedBy" INTEGER,
+    "moderatedBy" UUID,
     "moderatedAt" TIMESTAMP(3),
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
@@ -44,9 +46,9 @@ CREATE TABLE "User" (
 
 -- CreateTable
 CREATE TABLE "Friendship" (
-    "id" SERIAL NOT NULL,
-    "initiatorId" INTEGER NOT NULL,
-    "receiverId" INTEGER NOT NULL,
+    "id" UUID NOT NULL,
+    "initiatorId" UUID NOT NULL,
+    "receiverId" UUID NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Friendship_pkey" PRIMARY KEY ("id")
@@ -54,9 +56,9 @@ CREATE TABLE "Friendship" (
 
 -- CreateTable
 CREATE TABLE "FriendRequest" (
-    "id" SERIAL NOT NULL,
-    "senderId" INTEGER NOT NULL,
-    "receiverId" INTEGER NOT NULL,
+    "id" UUID NOT NULL,
+    "senderId" UUID NOT NULL,
+    "receiverId" UUID NOT NULL,
     "status" "FriendRequestStatus" NOT NULL DEFAULT 'PENDING',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "responsedAt" TIMESTAMP(3),
@@ -66,8 +68,8 @@ CREATE TABLE "FriendRequest" (
 
 -- CreateTable
 CREATE TABLE "UserFile" (
-    "id" SERIAL NOT NULL,
-    "userId" INTEGER,
+    "id" UUID NOT NULL,
+    "userId" UUID,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -76,38 +78,38 @@ CREATE TABLE "UserFile" (
 
 -- CreateTable
 CREATE TABLE "Ticket" (
-    "id" SERIAL NOT NULL,
-    "userFileId" INTEGER NOT NULL,
+    "id" UUID NOT NULL,
+    "userFileId" UUID NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "status" "TicketStatus" NOT NULL DEFAULT 'OPEN',
     "quickDescription" TEXT NOT NULL,
     "description" TEXT NOT NULL,
-    "workedById" INTEGER,
+    "workedById" UUID,
 
     CONSTRAINT "Ticket_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Post" (
-    "id" SERIAL NOT NULL,
+    "id" UUID NOT NULL,
     "title" TEXT NOT NULL,
     "content" TEXT NOT NULL,
     "image" TEXT,
     "tags" TEXT[],
     "ageRestriction" INTEGER NOT NULL,
     "isCertifiedAuthor" BOOLEAN NOT NULL DEFAULT false,
-    "preCapitalId" INTEGER,
-    "nextCapitalId" INTEGER,
+    "preCapitalId" UUID,
+    "nextCapitalId" UUID,
     "capital" INTEGER,
-    "authorId" INTEGER NOT NULL,
-    "moderatorId" INTEGER,
+    "authorId" UUID NOT NULL,
+    "moderatorId" UUID,
     "published" BOOLEAN NOT NULL DEFAULT false,
     "publishedAt" TIMESTAMP(3),
-    "publishedBy" INTEGER,
+    "publishedBy" UUID,
     "isDeleted" BOOLEAN NOT NULL DEFAULT false,
     "deletedAt" TIMESTAMP(3),
-    "deletedBy" INTEGER,
+    "deletedBy" UUID,
     "deleteReason" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -117,16 +119,16 @@ CREATE TABLE "Post" (
 
 -- CreateTable
 CREATE TABLE "Comment" (
-    "id" SERIAL NOT NULL,
-    "postId" INTEGER NOT NULL,
-    "userId" INTEGER NOT NULL,
+    "id" UUID NOT NULL,
+    "postId" UUID NOT NULL,
+    "userId" UUID NOT NULL,
     "content" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-    "moderatorId" INTEGER,
+    "moderatorId" UUID,
     "isDeleted" BOOLEAN NOT NULL DEFAULT false,
     "deletedAt" TIMESTAMP(3),
-    "deletedBy" INTEGER,
+    "deletedBy" UUID,
     "deleteReason" TEXT,
 
     CONSTRAINT "Comment_pkey" PRIMARY KEY ("id")
@@ -134,15 +136,16 @@ CREATE TABLE "Comment" (
 
 -- CreateTable
 CREATE TABLE "Rating" (
-    "id" SERIAL NOT NULL,
-    "postId" INTEGER NOT NULL,
-    "userId" INTEGER NOT NULL,
-    "rating" INTEGER NOT NULL,
+    "id" UUID NOT NULL,
+    "postId" UUID NOT NULL,
+    "userId" UUID NOT NULL,
+    "Likes" INTEGER NOT NULL,
+    "Dislikes" INTEGER NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "isDeleted" BOOLEAN NOT NULL DEFAULT false,
     "deletedAt" TIMESTAMP(3),
-    "deletedBy" INTEGER,
+    "deletedBy" UUID,
     "deleteReason" TEXT,
 
     CONSTRAINT "Rating_pkey" PRIMARY KEY ("id")

@@ -9,7 +9,7 @@ datasource db {
 }
 
 model User {
-  id              Int @id @default(autoincrement())
+  id              String @id @default(uuid()) @db.Uuid
   username        String @unique // unique username
   firstname       String // wenn kein ? dann ist es ein Pflichtfeld
   lastname        String // wenn kein ? dann ist es ein Pflichtfeld
@@ -18,10 +18,12 @@ model User {
   phone           String @unique // for 2FA // hier wird eine Blacklist angelegt zur Blockierung von Account
   role            UserRoles @default(ADULT)
   password        String // hashed password
+  hashedRefreshToken String? // hashed refresh token
+  profilePicture  String? // optional | claudinary
 
   // UserFile relation - fixed one-to-one relation
   userFile        UserFile? // bidirectional one-to-one relation
-  userFileId      Int? @unique // wird angelegt wenn beschwerden gegen einen User vorliegen - must be unique for one-to-one
+  userFileId      String? @unique @db.Uuid // wird angelegt wenn beschwerden gegen einen User vorliegen - must be unique for one-to-one
 
   // Relations
   // Bidirektionale Freundschaft: explizit zwei Seiten definieren (self relation!)
@@ -36,10 +38,10 @@ model User {
 
   // verlinkung der Eltern -> das sind Selfrelations
   parent1       User? @relation("Parent1", fields: [parent1Id], references: [id]) // hier wird dann eingetragen wer der erste Elternteil ist
-  parent1Id     Int? // hier wird dann eingetragen wer der erste Elternteil ist
+  parent1Id     String? @db.Uuid// hier wird dann eingetragen wer der erste Elternteil ist
 
   parent2       User? @relation("Parent2", fields: [parent2Id], references: [id]) // hier wird dann eingetragen wer der zweite Elternteil ist
-  parent2Id     Int? // hier wird dann eingetragen wer der zweite Elternteil ist
+  parent2Id     String? @db.Uuid// hier wird dann eingetragen wer der zweite Elternteil ist
   
   childrendAsParent1 User[] @relation("Parent1") // hier wird dann eingetragen wer der erste Elternteil ist
   childrendAsParent2 User[] @relation("Parent2") // hier wird dann eingetragen wer der zweite Elternteil ist
@@ -57,15 +59,15 @@ model User {
   moderatedComments Comment[] @relation("ModeratorComment") // wenn ein Moderator einen Kommentar moderiert
 
   // Admin Meta
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
   verified        Boolean     @default(false) // means this user has verified his email
 
   // deletions
   isDeleted       Boolean     @default(false)
   deletedAt       DateTime?
-  deletedBy       Int? // userId -> hier wird dann eingetragen wer den User gelöscht hat
+  deletedBy       String?     @db.Uuid// userId -> hier wird dann eingetragen wer den User gelöscht hat
   deletedByUser   User?       @relation("UserDeletedBy", fields: [deletedBy], references: [id]) // userId -> hier wird dann eingetragen welcher moderator den User gelöscht hat
   deleteReason    String?
   deactivated     Boolean     @default(false)
@@ -78,16 +80,17 @@ model User {
 
   // hier wird dann eingetragen ob er sich beworben hat, ob er angenommen wurde, ob er abgelehnt wurde (Bewerbung, angenommen, abgelehnt)
   status          ApplicationStatus @default(PENDING) // Bewerbung, angenommen, abgelehnt
-  authorizedBy    Int? // userId -> hier wird dann eingetragen wer den Autor angenommen hat
+  authorizedBy    String?           @db.Uuid // userId -> hier wird dann eingetragen wer den Autor angenommen hat
   authorizedAt    DateTime? // hier wird dann eingetragen wann der Autor angenommen wurde
   denyingReason   String? // hier wird dann eingetragen warum der Autor abgelehnt wurde
 
   // besonderheiten für Moderatoren
-  moderatedBy     Int? // userId -> hier wird dann eingetragen wer den Moderator angenommen hat
-  moderatedByUser User? @relation("ModeratedByUser", fields: [moderatedBy], references: [id]) // hier geht um bearbeitete Profile
+  moderatedBy     String?     @db.Uuid // userId -> hier wird dann eingetragen wer den Moderator angenommen hat
+  moderatedByUser User?       @relation("ModeratedByUser", fields: [moderatedBy], references: [id]) // hier geht um bearbeitete Profile
   moderatedAt     DateTime? // hier wird dann eingetragen wann der Moderator angenommen wurde
-  moderatedUsers User[] @relation("ModeratedByUser")
-  handelTickets   Ticket[] @relation("WorkedByUser") // hier werden alle Tickets gespeichert
+  moderatedUsers  User[]      @relation("ModeratedByUser")
+  handelTickets   Ticket[]    @relation("WorkedByUser") // hier werden alle Tickets gespeichert
+
 }
 
 enum UserRoles {
@@ -107,10 +110,10 @@ enum ApplicationStatus {
 }
 
 model Friendship {
-  id            Int @id @default(autoincrement())
+  id            String  @id @default(uuid()) @db.Uuid
   
-  initiatorId  Int
-  receiverId    Int
+  initiatorId   String  @db.Uuid
+  receiverId    String  @db.Uuid
 
   initiator    User @relation("Initiator", fields: [initiatorId], references: [id]) // userId -> hier wird dann eingetragen wer die Anfrage gesendet hat
   receiver      User @relation("Receiver", fields: [receiverId], references: [id]) // userId -> hier wird dann eingetragen wer die Anfrage empfangen hat
@@ -121,9 +124,9 @@ model Friendship {
 }
 
 model FriendRequest {
-  id              Int @id @default(autoincrement())
-  senderId        Int // userId -> hier wird dann eingetragen wer die Anfrage gesendet hat
-  receiverId      Int // userId -> hier wird dann eingetragen wer die Anfrage empfangen hat
+  id              String @id @default(uuid()) @db.Uuid
+  senderId        String @db.Uuid// userId -> hier wird dann eingetragen wer die Anfrage gesendet hat
+  receiverId      String @db.Uuid// userId -> hier wird dann eingetragen wer die Anfrage empfangen hat
   
   sender          User @relation("SendRequests", fields: [senderId], references: [id])
   receiver        User @relation("ReceivedRequest", fields: [receiverId], references: [id])
@@ -143,11 +146,11 @@ enum FriendRequestStatus {
 }
 
 model UserFile {
-  id              Int @id @default(autoincrement())
+  id              String @id @default(uuid()) @db.Uuid
   
   // Fixed one-to-one relation with User
   user            User? @relation(fields: [userId], references: [userFileId])
-  userId          Int? @unique
+  userId          String? @unique @db.Uuid
   
   tickets         Ticket[] @relation("UserFile") // hier werden alle Tickets gespeichert
   
@@ -157,9 +160,9 @@ model UserFile {
 
 // ticket kann man im Support erstellen, und dann wird es noch eine meldefunktion geben, als Report
 model Ticket {
-  id             Int @id @default(autoincrement())
+  id             String @id @default(uuid()) @db.Uuid
   
-  userFileId     Int // die id der Userakte
+  userFileId     String @db.Uuid// die id der Userakte
   userFile       UserFile @relation("UserFile", fields: [userFileId], references: [id])
   
   createdAt      DateTime @default(now())
@@ -170,7 +173,7 @@ model Ticket {
   description    String //  Beschreibung
 
   // moderatoren
-  workedById   Int?
+  workedById   String? @db.Uuid
   workedBy     User? @relation("WorkedByUser", fields: [workedById], references: [id])
 }
 
@@ -181,7 +184,7 @@ enum TicketStatus {
 }
 
 model Post {
-  id             Int @id @default(autoincrement())
+  id             String @id @default(uuid()) @db.Uuid
   title          String
   content        String
   image          String? // optional | claudinary
@@ -191,26 +194,26 @@ model Post {
 
   // Capital Controlling | self-relations
   preCapital     Post? @relation("PrePostRelation", fields: [preCapitalId], references: [id])
-  preCapitalId   Int? // wenn es einen Vorgänger gibt, dann wird hier der Vorgänger eingetragen
+  preCapitalId   String? @db.Uuid// wenn es einen Vorgänger gibt, dann wird hier der Vorgänger eingetragen
   nextCapitalPosts Post[] @relation("PrePostRelation") // added opposite relation field
 
   nextCapital    Post? @relation("NextPostRelation", fields: [nextCapitalId], references: [id])
-  nextCapitalId  Int? // wenn es einen Nachfolger gibt, dann wird hier der Nachfolger eingetragen
+  nextCapitalId  String? @db.Uuid// wenn es einen Nachfolger gibt, dann wird hier der Nachfolger eingetragen
   prevCapitalPosts Post[] @relation("NextPostRelation") // added opposite relation field
   
   capital        Int? // wie viele Kapitel der Artikel hat hat
 
-  authorId       Int
+  authorId       String @db.Uuid
   author         User @relation("UserPosts", fields: [authorId], references: [id])
 
-  moderatorId    Int?
+  moderatorId    String? @db.Uuid
   moderator      User? @relation("ModeratorPosts", fields: [moderatorId], references: [id])
 
   readByUser ReadPost[]
 
   published      Boolean @default(false)
   publishedAt    DateTime?
-  publishedBy    Int? // userId
+  publishedBy    String? @db.Uuid// userId
   publishedByUser User? @relation("PublishedByUser", fields: [publishedBy], references: [id]) 
 
   // comments & Ratings
@@ -220,7 +223,7 @@ model Post {
   // admin meta
   isDeleted      Boolean @default(false)
   deletedAt      DateTime?
-  deletedBy      Int? // userId
+  deletedBy      String? @db.Uuid// userId
   deletedByUser  User? @relation("PostDeletedBy", fields: [deletedBy], references: [id]) // userId -> hier wird dann eingetragen wer den Post gelöscht hat
   deleteReason   String?
 
@@ -241,41 +244,42 @@ model ReadPost {
 }
 
 model Comment {
-  id             Int @id @default(autoincrement())
-  postId         Int // zu welchem Post gehört der Kommentar
+  id             String @id @default(uuid()) @db.Uuid
+  postId         String @db.Uuid// zu welchem Post gehört der Kommentar
   post           Post @relation("PostComments", fields: [postId], references: [id])
-  userId         Int // wer den Kommentar geschrieben hat
+  userId         String @db.Uuid// wer den Kommentar geschrieben hat
   user           User @relation("UserComments", fields: [userId], references: [id])
 
   content        String
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  moderatorId    Int?
+  moderatorId    String? @db.Uuid // userId
   moderator      User? @relation("ModeratorComment", fields: [moderatorId], references: [id])
 
   isDeleted      Boolean @default(false)
   deletedAt      DateTime?
-  deletedBy      Int? // userId
+  deletedBy      String? @db.Uuid // userId
   deletedByUser  User? @relation("CommentDeletedBy", fields: [deletedBy], references: [id]) // userId -> hier wird dann eingetragen wer den Kommentar gelöscht hat
   deleteReason   String?
 }
 
 // model muss noch überarbeitet werden
 model Rating {
-  id             Int @id @default(autoincrement())
-  postId         Int
+  id             String @id @default(uuid()) @db.Uuid
+  postId         String @db.Uuid
   post           Post @relation("PostRatings", fields: [postId], references: [id])
-  userId         Int
+  userId         String @db.Uuid
   user           User @relation("UserRatings", fields: [userId], references: [id])
 
-  rating         Int
+  Likes          Int
+  Dislikes       Int
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   isDeleted      Boolean @default(false)
   deletedAt      DateTime?
-  deletedBy      Int? // userId
+  deletedBy      String? @db.Uuid// userId
   deletedByUser  User? @relation("RatingDeletedBy", fields: [deletedBy], references: [id]) // userId -> hier wird dann eingetragen wer den Kommentar gelöscht hat
   deleteReason   String?
 }

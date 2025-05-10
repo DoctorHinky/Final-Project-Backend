@@ -23,13 +23,24 @@
 
 ## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+A Simple Backend for an Education App with NestJS, Prisma and Postgres
 
 ## Project setup
 
 ```bash
 $ npm install
+
+$ docker-compose up -d # started isoliert die Container -> test und dev
+# zu beachten das notwendige programme installiert werden müssen
+
+$ npx prisma migrate dev --name init
+
+$ npx prisma studio # um die Datenbank zu sehen
+
 ```
+
+<p>Developer Sollten die .env.example und .env.admin.example umbenennen und die Variablen dem entsprechend befüllen.
+</p>
 
 ## Compile and run the project
 

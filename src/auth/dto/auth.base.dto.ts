@@ -8,15 +8,15 @@ import {
 import { Transform } from 'class-transformer';
 import { IsNotTempMail } from 'src/common/decorators/tempMail.validator';
 
-export class BaseFamilyDto {
+export class BaseAuthDto {
   @IsString()
   @IsNotEmpty()
-  name: string;
+  @IsOptional()
+  username?: string;
 
+  @Transform(({ value }: { value: string }) => value?.toLowerCase())
   @IsEmail()
   @IsOptional()
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-  @Transform(({ value }: { value: string }) => value?.toLowerCase())
   @IsNotTempMail()
   email?: string;
 
