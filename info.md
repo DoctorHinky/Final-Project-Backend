@@ -17,6 +17,7 @@
 - [ ] getAllUsers -M
 - [ ] getMe
 - [ ] updateUser
+- [ ] updateMe
 - [ ] updatePassword -U
 - [ ] applyForAuthor
 - [ ] deleteMyAccout

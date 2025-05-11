@@ -6,9 +6,10 @@ import {
 
 @ValidatorConstraint({ async: false })
 class BirthdateValidator implements ValidatorConstraintInterface {
-  validate(value: string): boolean {
-    console.log('Validating birthdate:', value);
-    const birthdate = new Date(value);
+  validate(value: unknown): boolean {
+    if (typeof value !== 'string' && !(value instanceof Date)) return false;
+
+    const birthdate = value instanceof Date ? value : new Date(value);
     if (isNaN(birthdate.getTime())) return false;
 
     const maxDate = new Date();
@@ -19,7 +20,8 @@ class BirthdateValidator implements ValidatorConstraintInterface {
   }
 
   defaultMessage(): string {
-    return `Birthdate must be between 1900-01-01 and ${new Date().toISOString().split('T')[0]}`;
+    const today = new Date().toISOString().split('T')[0];
+    return `Birthdate must be between 1900-01-01 and ${today}`;
   }
 }
 

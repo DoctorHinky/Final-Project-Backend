@@ -1,8 +1,17 @@
-import { Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+} from '@nestjs/common';
 import { UserService } from './user.service';
 import { UserRoles } from '@prisma/client';
 import { RequiredRoles } from 'src/common/decorators/roles.decorator';
 import { getCurrentUser } from 'src/common/decorators';
+import { UpdateMeDto, updatePassword, UpdateUserDto } from './dto';
 
 @Controller('user')
 
@@ -33,16 +42,27 @@ export class UserController {
   }
 
   @Patch('updateMe')
+  updateMe(@getCurrentUser('id') userId: string, @Body() dto: UpdateMeDto) {
+    return this.userService.updateMe(userId, dto);
+  }
 
-  // hier müssen alles update Funktionen rein für Admins und Moderator
-  @Patch('updateUser')
-  updateUser() {
-    return this.userService.updateUser();
+  // hier müssen alle update Funktionen rein für Admins und Moderator
+  @RequiredRoles(UserRoles.ADMIN, UserRoles.MODERATOR)
+  @Patch('updateUser/:userId')
+  updateUser(
+    @getCurrentUser('id') userId: string,
+    @Param('userId') targetId: string,
+    @Body() dto: UpdateUserDto,
+  ) {
+    return this.userService.updateUser(userId, targetId, dto);
   }
 
   @Patch('updatePassword')
-  updatePassword() {
-    return this.userService.updatePassword();
+  updatePassword(
+    @getCurrentUser('id') userId: string,
+    @Body() dto: updatePassword,
+  ) {
+    return this.userService.updatePassword(userId, dto);
   }
 
   @Post('applyForAuthor')
