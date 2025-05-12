@@ -50,7 +50,6 @@ export class UserService {
         where: { NOT: { role: UserRoles.ADMIN } },
       });
     }
-
     throw new ForbiddenException('Unauthorized access, request denied');
   }
 

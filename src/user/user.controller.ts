@@ -37,7 +37,7 @@ export class UserController {
 
   @RequiredRoles(UserRoles.ADMIN, UserRoles.MODERATOR)
   @Get('getAllUsers')
-  getAllUsers(@getCurrentUser('role') role: UserRoles) {
+  getAllUsers(@getCurrentUser('roles') role: UserRoles) {
     return this.userService.getAllUsers(role);
   }
 
