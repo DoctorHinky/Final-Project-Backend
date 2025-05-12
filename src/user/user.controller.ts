@@ -50,6 +50,7 @@ export class UserController {
   @RequiredRoles(UserRoles.ADMIN, UserRoles.MODERATOR)
   @Patch('updateUser/:userId')
   updateUser(
+    // Current user is der Moderator oder Admin
     @getCurrentUser('id') userId: string,
     @Param('userId') targetId: string,
     @Body() dto: UpdateUserDto,
@@ -66,8 +67,10 @@ export class UserController {
   }
 
   @Post('applyForAuthor')
-  applyForAuthor() {
-    return this.userService.applyForAuthor();
+  // Current user is der User selbst
+  applyForAuthor(@getCurrentUser('id') userId: string) {
+    // es muss noch geklärt werden wir der bewerbungsprozess aussieht
+    return this.userService.applyForAuthor(userId);
   }
 
   @Post('deleteMyAccount')

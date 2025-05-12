@@ -13,12 +13,12 @@
 
 ### _User_
 
-- [ ] getUserById -M ? freunde suchen? Username?
-- [ ] getAllUsers -M
-- [ ] getMe
-- [ ] updateUser
-- [ ] updateMe
-- [ ] updatePassword -U
+- [x] getUserById -M ? freunde suchen? Username?
+- [x] getAllUsers -M
+- [x] getMe
+- [x] updateUser
+- [x] updateMe
+- [x] updatePassword -U
 - [ ] applyForAuthor
 - [ ] deleteMyAccout
 - [ ] deactivateMyAccount

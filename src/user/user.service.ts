@@ -188,10 +188,11 @@ export class UserService {
       data: { password: dto.newPassword },
     });
 
-    return omit(user, ['password']);
+    return 'Password updated successfully';
   }
 
-  applyForAuthor() {
+  async applyForAuthor(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
     return 'applyForAuthor';
   }
 

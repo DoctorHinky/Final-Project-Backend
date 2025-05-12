@@ -81,7 +81,7 @@ model User {
   deletedUsers     User[]     @relation("UserDeletedBy")
 
   // hier wird dann eingetragen ob er sich beworben hat, ob er angenommen wurde, ob er abgelehnt wurde (Bewerbung, angenommen, abgelehnt)
-  status          ApplicationStatus @default(PENDING) // Bewerbung, angenommen, abgelehnt
+  ApplicationStatus ApplicationStatus?  // Bewerbung, angenommen, abgelehnt (default: null)
   authorizedBy    String?           @db.Uuid // userId -> hier wird dann eingetragen wer den Autor angenommen hat
   authorizedAt    DateTime? // hier wird dann eingetragen wann der Autor angenommen wurde
   denyingReason   String? // hier wird dann eingetragen warum der Autor abgelehnt wurde
