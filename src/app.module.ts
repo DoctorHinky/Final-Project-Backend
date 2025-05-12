@@ -7,6 +7,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AtGuard } from './common/guards';
 import { SeedModule } from 'Admins/Seeder.module';
 import { RolesGuard } from './common/guards/roles.guard';
+import { CloudinaryModule } from './cloudinary/cloudinary.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { RolesGuard } from './common/guards/roles.guard';
     UserModule,
     PrismaModule,
     SeedModule,
+    CloudinaryModule,
   ],
   providers: [
     { provide: 'APP_GUARD', useClass: AtGuard },
