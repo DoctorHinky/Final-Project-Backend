@@ -8,7 +8,12 @@ import {
 import { User, UserRoles } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { omit } from 'lodash';
-import { UpdateMeDto, updatePassword, UpdateUserDto } from './dto';
+import {
+  CreateModsAndAdminsDto,
+  UpdateMeDto,
+  updatePassword,
+  UpdateUserDto,
+} from './dto';
 import { verifyPassword } from 'src/auth/utils/password.utils';
 
 @Injectable()
@@ -135,6 +140,8 @@ export class UserService {
       updateData.verified = false;
     }
 
+    // hier ist es nicht möglich andere Mods oder Admins zu erstellen, dafür wird es eine extra function geben
+
     try {
       await this.prisma.user.update({
         where: { id: targetId },
@@ -191,9 +198,64 @@ export class UserService {
     return 'Password updated successfully';
   }
 
+  // mit dieser function können admins moderatoren und admins erstellen
+  async createModsAndAdmins(
+    userId: string,
+    targetId: string,
+    updateData: CreateModsAndAdminsDto,
+  ) {
+    try {
+      const user = (await this.prisma.user.findUnique({
+        where: { id: userId },
+      })) as User;
+
+      const target = (await this.prisma.user.findUnique({
+        where: { id: targetId },
+      })) as User;
+
+      if (!user || !target) {
+        throw new BadRequestException('Database error, cant fetch needed data');
+      }
+      if (
+        target.role === UserRoles.ADMIN &&
+        user.createdAt < target.createdAt
+      ) {
+        throw new UnauthorizedException(
+          'You can only create mods and admins that are created after you, (system securety)',
+        );
+      }
+      if (updateData.targetRole === 'MODERATOR') {
+        updateData.targetRole = UserRoles.MODERATOR;
+      } else if (updateData.targetRole === 'ADMIN') {
+        updateData.targetRole = UserRoles.ADMIN;
+      } else {
+        throw new BadRequestException('Invalid role');
+      }
+
+      await this.prisma.user.update({
+        where: { id: targetId },
+        data: {
+          role: updateData.targetRole,
+          moderatedAt: new Date(),
+          moderatedBy: userId,
+        },
+      });
+    } catch (error) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      if (error.code === 'P2025') {
+        throw new BadRequestException('Unknown error, cant update user');
+      } else {
+        throw new Error(
+          'Unexpected error occurred while updating user CreateModsAndAdmins',
+        );
+      }
+    }
+  }
+
+  // wird erstmal pausiert, da wir noch kein Ticket, und Cloudinary haben
   async applyForAuthor(userId: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    return 'applyForAuthor';
+    return user;
   }
 
   deleteMyAccount() {

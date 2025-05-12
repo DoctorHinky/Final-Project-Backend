@@ -20,6 +20,7 @@
 - [x] updateMe
 - [x] updatePassword -U
 - [ ] applyForAuthor
+- [ ] createModerator
 - [ ] deleteMyAccout
 - [ ] deactivateMyAccount
 - [ ] deleteUser -M

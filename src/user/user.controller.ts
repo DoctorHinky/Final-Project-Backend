@@ -11,7 +11,12 @@ import { UserService } from './user.service';
 import { UserRoles } from '@prisma/client';
 import { RequiredRoles } from 'src/common/decorators/roles.decorator';
 import { getCurrentUser } from 'src/common/decorators';
-import { UpdateMeDto, updatePassword, UpdateUserDto } from './dto';
+import {
+  CreateModsAndAdminsDto,
+  UpdateMeDto,
+  updatePassword,
+  UpdateUserDto,
+} from './dto';
 
 @Controller('user')
 
@@ -64,6 +69,16 @@ export class UserController {
     @Body() dto: updatePassword,
   ) {
     return this.userService.updatePassword(userId, dto);
+  }
+
+  @Patch('createModsAndAdmins')
+  @RequiredRoles(UserRoles.ADMIN)
+  createModsAndAdmins(
+    @getCurrentUser('id') userId: string,
+    @Body() dto: CreateModsAndAdminsDto,
+    @Param('userId') targetId: string,
+  ) {
+    return this.userService.createModsAndAdmins(userId, targetId, dto);
   }
 
   @Post('applyForAuthor')
