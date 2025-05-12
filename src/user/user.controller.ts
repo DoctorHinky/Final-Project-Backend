@@ -13,6 +13,7 @@ import { RequiredRoles } from 'src/common/decorators/roles.decorator';
 import { getCurrentUser } from 'src/common/decorators';
 import {
   CreateModsAndAdminsDto,
+  DeleteAccountDto,
   UpdateMeDto,
   updatePassword,
   UpdateUserDto,
@@ -39,6 +40,11 @@ export class UserController {
   @Get('getAllUsers')
   getAllUsers(@getCurrentUser('roles') role: UserRoles) {
     return this.userService.getAllUsers(role);
+  }
+
+  @Get('getUserByUserName')
+  getUserByUserName(@Body('userName') userName: string) {
+    return this.userService.getUserByUserName(userName);
   }
 
   @Get('getMe')
@@ -71,7 +77,7 @@ export class UserController {
     return this.userService.updatePassword(userId, dto);
   }
 
-  @Patch('createModsAndAdmins')
+  @Patch('createModsAndAdmins/:userId')
   @RequiredRoles(UserRoles.ADMIN)
   createModsAndAdmins(
     @getCurrentUser('id') userId: string,
@@ -88,23 +94,51 @@ export class UserController {
     return this.userService.applyForAuthor(userId);
   }
 
-  @Post('deleteMyAccount')
-  deleteMyAccount() {
-    return this.userService.deleteMyAccount();
+  @Patch('deleteMyAccount')
+  deleteMyAccount(
+    @getCurrentUser('id') userId: string,
+    @Body() dto: DeleteAccountDto,
+  ) {
+    return this.userService.deleteMyAccount(userId, dto);
   }
 
-  @Post('deactivateMyAccount')
-  deactivateMyAccount() {
-    return this.userService.deleteMyAccount();
+  @Patch('deactivateMyAccount')
+  deactivateMyAccount(@getCurrentUser('id') userId: string) {
+    return this.userService.deactivateMyAccount(userId);
   }
 
-  @Delete('deleteUser/:userid')
-  deleteUser() {
-    return this.userService.deleteUser();
+  @Patch('reactivateMyAccount')
+  reactivateMyAccount(@getCurrentUser('id') userId: string) {
+    return this.userService.reactivateMyAccount(userId);
   }
 
-  @Post('restoreUser/:userid')
-  restoreUser() {
-    return this.userService.restoreUser();
+  @Patch('deleteUser/:userId')
+  @RequiredRoles(UserRoles.ADMIN, UserRoles.MODERATOR)
+  deleteUser(
+    @getCurrentUser('id') userId: string,
+    @getCurrentUser('roles') role: UserRoles,
+    @Param('userId') targetId: string,
+    @Body() dto: DeleteAccountDto,
+  ) {
+    return this.userService.deleteUser(userId, role, targetId, dto);
+  }
+
+  @Patch('restoreUser/:userId')
+  restoreUser(
+    @getCurrentUser('id') userId: string,
+    @getCurrentUser('roles') role: UserRoles,
+    @Param('userId') targetId: string,
+  ) {
+    return this.userService.restoreUser(userId, role, targetId);
+  }
+
+  @Delete('deleteUserForever/:userId')
+  @RequiredRoles(UserRoles.ADMIN)
+  deleteUserForever(
+    @getCurrentUser('id') userId: string,
+    @getCurrentUser('roles') role: UserRoles,
+    @Param('userId') targetId: string,
+  ) {
+    return this.userService.deleteUserForever(userId, role, targetId);
   }
 }

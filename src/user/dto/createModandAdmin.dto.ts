@@ -5,5 +5,5 @@ export class CreateModsAndAdminsDto {
   @IsString()
   @Transform(({ value }: { value: string }) => value?.toUpperCase())
   @IsEnum(['MODERATOR', 'ADMIN'])
-  targetRole: 'MODERATOR' | 'ADMIN';
+  role: 'MODERATOR' | 'ADMIN';
 }

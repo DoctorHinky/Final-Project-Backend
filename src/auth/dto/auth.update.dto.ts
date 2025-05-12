@@ -8,6 +8,6 @@ export class PasswordChangeDto extends BaseAuthDto {
 
   @IsString()
   @IsNotEmpty()
-  @IsStrongPasswordZXCVBN(3, { message: 'The newPassword has to be stronger' })
+  @IsStrongPasswordZXCVBN(3, { message: 'The new password has to be stronger' })
   newPassword: string;
 }

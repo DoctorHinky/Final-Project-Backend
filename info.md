@@ -15,16 +15,19 @@
 
 - [x] getUserById -M ? freunde suchen? Username?
 - [x] getAllUsers -M
+- [x] getUserByUserName
 - [x] getMe
 - [x] updateUser
 - [x] updateMe
 - [x] updatePassword -U
 - [ ] applyForAuthor
-- [ ] createModerator
-- [ ] deleteMyAccout
-- [ ] deactivateMyAccount
-- [ ] deleteUser -M
-- [ ] restoreUser -M
+- [x] createModerator
+- [x] deleteMyAccout
+- [x] deactivateMyAccount
+- [x] reactivateMyAccount
+- [x] deleteUser -M
+- [x] restoreUser -M
+- [?] deleteUserForever -A
 
 ---
 
