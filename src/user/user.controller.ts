@@ -10,35 +10,54 @@ import { UserService } from './user.service';
 export class UserController {
   constructor(private userService: UserService) {}
 
-  @Get('getUserById/:userid')
-  getUserById() {
-    return this.userService.getUserById();
+  @Get('getUserById/:userId')
+  getUserById(
+    @Param('userId') targetId: string,
+    @getCurrentUser('role') role: UserRoles,
+  ) {
+    return this.userService.getUserById(role, targetId);
   }
 
   @Get('getAllUsers')
-  getAllUsers() {
-    return this.userService.getAllUsers();
+  getAllUsers(@getCurrentUser('role') role: UserRoles) {
+    return this.userService.getAllUsers(role);
   }
 
   @Get('getMe')
-  getMe() {
-    return this.userService.getMe();
+  getMe(@getCurrentUser('id') userId: string) {
+    return this.userService.getMe(userId);
   }
 
-  // hier müssen alles update Funktionen rein für Admins, Moderator und User
-  @Patch('updateUser')
-  updateUser() {
-    return this.userService.updateUser();
+  @Patch('updateMe')
+  updateMe(@getCurrentUser('id') userId: string, @Body() dto: UpdateMeDto) {
+    return this.userService.updateMe(userId, dto);
+  }
+
+  // hier müssen alle update Funktionen rein für Admins und Moderator
+  @RequiredRoles(UserRoles.ADMIN, UserRoles.MODERATOR)
+  @Patch('updateUser/:userId')
+  updateUser(
+    // Current user is der Moderator oder Admin
+    @getCurrentUser('id') userId: string,
+    @Param('userId') targetId: string,
+    @Body() dto: UpdateUserDto,
+  ) {
+    return this.userService.updateUser(userId, targetId, dto);
   }
 
   @Patch('updatePassword')
-  updatePassword() {
-    return this.userService.updatePassword();
+  updatePassword(
+    @getCurrentUser('id') userId: string,
+    @Body() dto: updatePassword,
+  ) {
+    return this.userService.updatePassword(userId, dto);
   }
 
   @Post('applyForAuthor')
-  applyForAuthor() {
-    return this.userService.applyForAuthor();
+  // Current user is der User selbst
+  applyForAuthor(@getCurrentUser('id') userId: string) {
+    // es muss noch geklärt werden wir der bewerbungsprozess aussieht
+    return this.userService.applyForAuthor(userId);
   }
 
   @Post('deleteMyAccount')
