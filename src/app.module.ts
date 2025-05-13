@@ -8,6 +8,8 @@ import { AtGuard } from './common/guards';
 import { SeedModule } from 'Admins/Seeder.module';
 import { RolesGuard } from './common/guards/roles.guard';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { TicktModule } from './tickt/tickt.module';
+import { TicketsModule } from './tickets/tickets.module';
 
 @Module({
   imports: [
@@ -19,6 +21,8 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
     PrismaModule,
     SeedModule,
     CloudinaryModule,
+    TicktModule,
+    TicketsModule,
   ],
   providers: [
     { provide: 'APP_GUARD', useClass: AtGuard },
