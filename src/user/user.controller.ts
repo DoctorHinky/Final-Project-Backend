@@ -6,6 +6,8 @@ import {
   Param,
   Patch,
   Post,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UserRoles } from '@prisma/client';
@@ -18,6 +20,9 @@ import {
   updatePassword,
   UpdateUserDto,
 } from './dto';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+import { memoryStorage } from 'multer';
 
 @Controller('user')
 
@@ -26,12 +31,15 @@ import {
  * @route: /user
  */
 export class UserController {
-  constructor(private userService: UserService) {}
+  constructor(
+    private userService: UserService,
+    private cloudinaryService: CloudinaryService,
+  ) {}
 
   @Get('getUserById/:userId')
   getUserById(
     @Param('userId') targetId: string,
-    @getCurrentUser('role') role: UserRoles,
+    @getCurrentUser('roles') role: UserRoles,
   ) {
     return this.userService.getUserById(role, targetId);
   }
@@ -53,19 +61,53 @@ export class UserController {
   }
 
   @Patch('updateMe')
-  updateMe(@getCurrentUser('id') userId: string, @Body() dto: UpdateMeDto) {
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB limit
+    }),
+  )
+  async updateMe(
+    @getCurrentUser('id') userId: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Body() dto: UpdateMeDto,
+  ) {
+    if (file) {
+      const result = await this.cloudinaryService.uploadFile(
+        file,
+        'profile_pictures',
+      );
+      dto.profilePicture = result.secure_url;
+      dto.publicid_picture = result.public_id;
+    }
     return this.userService.updateMe(userId, dto);
   }
 
   // hier müssen alle update Funktionen rein für Admins und Moderator
   @RequiredRoles(UserRoles.ADMIN, UserRoles.MODERATOR)
   @Patch('updateUser/:userId')
-  updateUser(
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB limit
+    }),
+  )
+  async updateUser(
     // Current user is der Moderator oder Admin
     @getCurrentUser('id') userId: string,
     @Param('userId') targetId: string,
+    @UploadedFile() file: Express.Multer.File,
     @Body() dto: UpdateUserDto,
   ) {
+    if (file) {
+      const result = await this.cloudinaryService.uploadFile(
+        file,
+        'profile_pictures',
+      );
+
+      dto.profilePicture = result.secure_url;
+      dto.publicid_picture = result.public_id;
+    }
     return this.userService.updateUser(userId, targetId, dto);
   }
 

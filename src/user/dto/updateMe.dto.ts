@@ -55,6 +55,10 @@ export class UpdateMeDto {
   profilePicture?: string;
 
   @IsOptional()
+  @IsString()
+  publicid_picture?: string;
+
+  @IsOptional()
   @Transform(({ value }: { value: string }) => Boolean(value))
   @IsBoolean()
   verified?: boolean;

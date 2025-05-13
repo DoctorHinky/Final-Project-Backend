@@ -1,13 +1,16 @@
 import {
   Controller,
+  Get,
   Post,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
 import { CloudinaryService } from './cloudinary.service';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { RequiredRoles } from 'src/common/decorators/roles.decorator';
+import { UserRoles } from '@prisma/client';
 
-@Controller('upload')
+@Controller('cloud')
 export class CloudinaryController {
   constructor(private readonly cloudinaryService: CloudinaryService) {}
 
@@ -19,5 +22,11 @@ export class CloudinaryController {
       message: 'upload succeded',
       url: result.secure_url,
     };
+  }
+
+  @Get('cleanup')
+  @RequiredRoles(UserRoles.ADMIN)
+  async cleanUp() {
+    return this.cloudinaryService.cleanCloud();
   }
 }

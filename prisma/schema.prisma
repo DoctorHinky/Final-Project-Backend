@@ -20,6 +20,7 @@ model User {
   password        String // hashed password
   hashedRefreshToken String? // hashed refresh token
   profilePicture  String? // optional | claudinary
+  publicid_picture String? // optional | claudinary
   shortDescription String? // optional
   bio             String? // optional
 

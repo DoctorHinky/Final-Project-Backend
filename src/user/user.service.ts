@@ -153,7 +153,7 @@ export class UserService {
     } else if (
       target.role === UserRoles.ADMIN &&
       user.role === UserRoles.ADMIN &&
-      user.createdAt < target.createdAt
+      user.createdAt > target.createdAt // higher timestamp = younger user
     ) {
       throw new UnauthorizedException(
         'You can only update admin profiles that are created after you, (system securety)',
@@ -570,5 +570,19 @@ export class UserService {
         );
       }
     }
+  }
+
+  async getPicture() {
+    const allPictures = (await this.prisma.user.findMany({
+      where: { NOT: { publicid_picture: null } },
+
+      select: {
+        publicid_picture: true,
+      },
+    })) as { publicid_picture: string }[];
+
+    return allPictures.map((picture) => {
+      return picture.publicid_picture;
+    });
   }
 }

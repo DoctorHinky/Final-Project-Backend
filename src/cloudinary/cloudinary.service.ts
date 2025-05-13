@@ -1,33 +1,106 @@
-/* eslint-disable @typescript-eslint/no-base-to-string */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { Injectable } from '@nestjs/common';
 import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
-import * as streamifier from 'streamifier';
+import { UserService } from 'src/user/user.service';
+import { Readable } from 'stream';
 
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+// Die Konfiguration sollte idealerweise in einem Modul oder bei der Service-Initialisierung erfolgen
 @Injectable()
 export class CloudinaryService {
+  constructor(private userService: UserService) {}
+
   async uploadFile(
     file: Express.Multer.File,
     folder = 'uploads',
   ): Promise<UploadApiResponse> {
     return new Promise((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
+      if (!file || !file.buffer) {
+        return reject(new Error('Invalid file or missing buffer property.'));
+      }
+
+      let actualBuffer: Buffer;
+
+      if (Buffer.isBuffer(file.buffer)) {
+        // Fall 1: Normaler Buffer
+        actualBuffer = file.buffer;
+      } else if (typeof file.buffer === 'object') {
+        // Fall 2: JSON-artiges Objekt, das wie Buffer aussieht
+        console.log(
+          'file.buffer ist ein Objekt mit Indizes. Konvertiere zu Buffer.',
+        );
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+        const values = Object.values(file.buffer) as number[];
+        actualBuffer = Buffer.from(values);
+      } else if (typeof file.buffer === 'string') {
+        // Fall 3: Vielleicht base64?
+        console.log('file.buffer ist ein String. Versuche als base64.');
+        actualBuffer = Buffer.from(file.buffer, 'base64');
+      } else {
+        console.error('Unbekanntes Format von file.buffer:', file.buffer);
+        return reject(new Error('Invalid file buffer format.'));
+      }
+
+      const uploadStream = cloudinary.uploader.upload_stream(
         {
           folder,
-          resource_type: 'auto', // Automatically detect the resource type (image, video, etc.)
+          resource_type: 'auto',
         },
         (error, result) => {
-          if (error) return reject(new Error(error.message || String(error)));
-          resolve(result as UploadApiResponse);
+          if (error)
+            return reject(
+              new Error(error.message || 'Cloudinary upload failed'),
+            );
+          if (!result)
+            return reject(new Error('No result returned from Cloudinary'));
+          resolve(result);
         },
       );
 
-      if (file && file.buffer) {
-        streamifier.createReadStream(file.buffer).pipe(stream);
-      } else {
-        reject(new Error('Invalid file or missing buffer property.'));
-      }
+      // Erstelle einen lesbaren Stream aus dem Buffer und pipe ihn zum Upload-Stream
+      const readableStream = Readable.from(actualBuffer);
+      readableStream.pipe(uploadStream);
     });
+  }
+
+  async deleteFile(publicId: string): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      void cloudinary.uploader.destroy(publicId, (error) => {
+        // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
+        if (error) return reject(error);
+        resolve();
+      });
+    });
+  }
+
+  async cleanCloud() {
+    const dbPicturesId = await this.userService.getPicture();
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const cloudPictures = await cloudinary.api.resources({
+      type: 'upload',
+      prefix: 'profile_pictures',
+      max_results: 500,
+      resource_type: 'image',
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
+    const cloudPicturesId = cloudPictures.resources.map((pic) => pic.public_id);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    const picturesToDelete = cloudPicturesId.filter(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      (pic) => !dbPicturesId.includes(pic),
+    ) as string[];
+
+    if (picturesToDelete.length > 0) {
+      await Promise.all(picturesToDelete.map((pic) => this.deleteFile(pic)));
+    }
+
+    return {
+      message: 'Cloudinary cleaned',
+      deletedPictures: picturesToDelete,
+    };
   }
 }
