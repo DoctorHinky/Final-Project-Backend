@@ -79,6 +79,22 @@
 
 ---
 
+### _Applications_
+
+- [ ] sendApplication -U
+- [ ] cancelApplication -U
+- [ ] getAllApplications -M
+- [ ] getApplicationById -M ? unnötig kein UseCase
+- [ ] getApplicationByUserId -M
+- [ ] blockUserForApplication -M
+- [ ] unblockUserForApplication -M
+
+- [ ] takeApplication -M -> damit ändert sich der Status auf in_progress
+- [ ] acceptApplication -M -> hier kann dann eine automatische Email an den User gesendet werden
+- [ ] rejectApplication -M -> hier kann dann eine automatische Email an den User gesendet werden
+
+---
+
 ### _Freunde_
 
 - [ ] getAllFriends
@@ -99,14 +115,16 @@
 
 ### _Tickets_
 
-- [ ] getAllTickets
-  - hier mit optional filter aber dafault open
+- [ ] createTicket -> einstiegspunkt
+- [ ] getTickets -> hier mit optional filter aber dafault open
 - [ ] getAllTicketsByModeratorId
-- [ ] getAllTicketsByUserId
+- [ ] getAllTicketsByUserId -> im default viellicht getMyTickets / oder eigene Funktion
+- [ ] updateTicket -> hier müssen die Arbeiten und beschreibungen in die Tickets rein
 - [ ] takeTicket -M
+- [ ] reassignTicket ? bei Krankheit oder interessenkonflikten
 - [ ] getTicketById -M
-- [ ] updateTicket ? updaten das Betreffs -> Aufforderungen
-- [ ] createTicket
+- [ ] cancelTicket -U -> wenn das Problem sich erledigt hat
+- [ ] closeTicket -M + U
 
 ---
 
@@ -130,3 +148,9 @@
 - Moderator Funktion = M
 - Tokenfunktion = t
 - User Funktion = U
+
+### Cronjobs
+
+- [ ] cloudinary-cleanup
+- [ ] delete old thinks -> das muss in jedes modul rein
+- [ ] closed tickets delete

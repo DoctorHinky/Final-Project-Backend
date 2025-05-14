@@ -1,0 +1,93 @@
+import {
+  Body,
+  Controller,
+  Get,
+  Patch,
+  Post,
+  Query,
+  UploadedFiles,
+  UseInterceptors,
+} from '@nestjs/common';
+import { TicketService } from './ticket.service';
+import { getCurrentUser } from 'src/common/decorators';
+import { CreateTicketDto } from './dto';
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
+
+@Controller('ticket')
+export class TicketController {
+  constructor(
+    private ticketService: TicketService,
+    private cloudinaryService: CloudinaryService,
+  ) {}
+
+  @Post('createTicket')
+  @UseInterceptors(
+    FilesInterceptor('files', 5, {
+      // Limit to 5 files
+      storage: memoryStorage(), // Store files in memory (RAM)
+      limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB limit per file
+    }),
+  )
+  async createTicket(
+    @getCurrentUser('id') userId: string,
+    @UploadedFiles() files: Express.Multer.File[],
+    @Body() dto: CreateTicketDto,
+  ) {
+    return this.ticketService.createTicket(userId, dto, files);
+  }
+
+  @Get()
+  getTickets() {
+    return this.ticketService.getTickets();
+  }
+
+  @Get('by-moderator/:moderatorId')
+  getAllTicketsByModeratorId() {
+    // Implement logic to get all tickets by moderator ID
+    return this.ticketService.getAllTicketsByModeratorId();
+  }
+
+  @Get('by-user/:userId')
+  getAllTicketsByUserId() {
+    // Implement logic to get all tickets by user ID
+    return this.ticketService.getAllTicketsByUserId();
+  }
+
+  @Get(':id')
+  getTicketById() {
+    // Implement logic to get ticket by ID
+    return this.ticketService.getTicketById();
+  }
+
+  @Patch(':id')
+  updateTicket() {
+    // Implement logic to update a ticket
+    return this.ticketService.updateTicket();
+  }
+
+  @Post(':id/take')
+  takeTicket() {
+    // Implement logic to take a ticket
+    return this.ticketService.takeTicket();
+  }
+
+  @Post(':id/reassign')
+  reassignTicket() {
+    // Implement logic to reassign a ticket
+    return this.ticketService.reassignTicket();
+  }
+
+  @Post(':id/cancel')
+  cancelTicket() {
+    // Implement logic to cancel a ticket
+    return this.ticketService.cancelTicket();
+  }
+
+  @Post(':id/close')
+  closeTicket() {
+    // Implement logic to close a ticket
+    return this.ticketService.closeTicket();
+  }
+}

@@ -4,6 +4,7 @@ import { CloudinaryController } from './cloudinary.controller';
 import { MulterModule } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { UserModule } from 'src/user/user.module';
+import { TicketModule } from 'src/ticket/ticket.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { UserModule } from 'src/user/user.module';
       limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB limit
     }),
     forwardRef(() => UserModule), // Circular dependency
+    forwardRef(() => TicketModule),
   ],
   providers: [CloudinaryService],
   controllers: [CloudinaryController],

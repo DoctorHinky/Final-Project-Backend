@@ -64,7 +64,7 @@ export class UserController {
   @UseInterceptors(
     FileInterceptor('file', {
       storage: memoryStorage(),
-      limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB limit
+      limits: { fileSize: 15 * 1024 * 1024 }, // 15 MB limit
     }),
   )
   async updateMe(
@@ -89,7 +89,7 @@ export class UserController {
   @UseInterceptors(
     FileInterceptor('file', {
       storage: memoryStorage(),
-      limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB limit
+      limits: { fileSize: 15 * 1024 * 1024 }, // 15 MB limit
     }),
   )
   async updateUser(

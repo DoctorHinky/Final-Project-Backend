@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
+import {
+  v2 as cloudinary,
+  UploadApiOptions,
+  UploadApiResponse,
+} from 'cloudinary';
 import { UserService } from 'src/user/user.service';
 import { Readable } from 'stream';
 
@@ -40,15 +44,23 @@ export class CloudinaryService {
         console.log('file.buffer ist ein String. Versuche als base64.');
         actualBuffer = Buffer.from(file.buffer, 'base64');
       } else {
-        console.error('Unbekanntes Format von file.buffer:', file.buffer);
         return reject(new Error('Invalid file buffer format.'));
       }
 
+      const mimetype = file.mimetype;
+      const isImage = mimetype.startsWith('image/');
+
+      const uploadOptions: UploadApiOptions = {
+        folder,
+        resource_type: 'auto',
+      };
+
+      if (isImage) {
+        uploadOptions.transformation = [{ fetch_format: 'webp' }];
+      }
+
       const uploadStream = cloudinary.uploader.upload_stream(
-        {
-          folder,
-          resource_type: 'auto',
-        },
+        uploadOptions,
         (error, result) => {
           if (error)
             return reject(
@@ -76,7 +88,7 @@ export class CloudinaryService {
     });
   }
 
-  async cleanCloud() {
+  async cleanCloudProfileImages() {
     const dbPicturesId = await this.userService.getPicture();
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const cloudPictures = await cloudinary.api.resources({

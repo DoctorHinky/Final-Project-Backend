@@ -24,9 +24,9 @@ export class CloudinaryController {
     };
   }
 
-  @Get('cleanup')
+  @Get('cleanup_profile_images')
   @RequiredRoles(UserRoles.ADMIN)
   async cleanUp() {
-    return this.cloudinaryService.cleanCloud();
+    return this.cloudinaryService.cleanCloudProfileImages();
   }
 }
