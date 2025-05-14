@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateTicketDto, GetTicketQueryDto } from './dto';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+import { Ticket, UserFile } from '@prisma/client';
 
 @Injectable()
 export class TicketService {
@@ -15,28 +16,40 @@ export class TicketService {
     dto: CreateTicketDto,
     files: Express.Multer.File[],
   ) {
+    let UserFile: UserFile | null = null;
     try {
       // sicherstellen das wie eine Akte habe
-      let UserFile = await this.prisma.userFile.findUnique({
-        where: { userId: userId },
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { userFileId: true },
       });
-      if (!UserFile) {
+      if (user?.userFileId) {
+        UserFile = await this.prisma.userFile.findUnique({
+          where: { id: user?.userFileId },
+        });
+      } else {
         try {
           const createdFile = await this.prisma.userFile.create({
-            data: { user: { connect: { id: userId } } },
+            data: {},
           });
 
-          UserFile = await this.prisma.userFile.findUnique({
-            where: { id: createdFile.id },
-          });
-
-          if (!UserFile) {
-            throw new BadRequestException('UserFile creation failed');
-          }
-
-          await this.prisma.user.findUnique({
+          await this.prisma.user.update({
             where: { id: userId },
-            include: { userFile: true },
+            data: { userFileId: createdFile.id },
+          });
+
+          const UserWithFile = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: { userFileId: true },
+          });
+
+          if (!UserWithFile?.userFileId) {
+            throw new BadRequestException('UserFile not found', {
+              description: 'UserFile not found',
+            });
+          }
+          UserFile = await this.prisma.userFile.findUnique({
+            where: { id: UserWithFile?.userFileId },
           });
         } catch (error) {
           throw new BadRequestException('UserFile creation failed', {
@@ -78,7 +91,6 @@ export class TicketService {
       });
 
       await Promise.all(uploadFile);
-      console.log('files uploaded');
 
       return 'Ticket created successfully'; // später dann geht all ticket of user
     } catch (error) {
@@ -124,12 +136,54 @@ export class TicketService {
     }
   }
 
-  getAllTicketsByModeratorId() {
-    // TODO: Implement getAllTicketsByModeratorId
+  async getAllTicketsByModeratorId(modId: string) {
+    try {
+      const tickets: Ticket[] = await this.prisma.ticket.findMany({
+        where: { workedById: modId },
+      });
+      if (!tickets || tickets.length === 0) {
+        return 'Fetch successfully, but no tickets where this mod is working on';
+      } else {
+        return tickets;
+      }
+    } catch (error) {
+      throw new BadRequestException('Error fetching tickets', {
+        cause: error,
+        description:
+          'An error occurred while fetching tickets, under this moderatorId',
+      });
+    }
   }
 
-  getAllTicketsByUserId() {
-    // TODO: Implement getAllTicketsByUserId
+  async getAllTicketsByUserId(userId: string) {
+    try {
+      const userFile = await this.prisma.userFile.findUnique({
+        where: { userId: userId },
+      });
+      console.log('userFile', userFile);
+
+      if (!userFile) {
+        throw new BadRequestException('Cant fetch tickets', {
+          description: 'User has no file',
+        });
+      }
+
+      /* const tickets: Ticket[] = userFile.tickets;
+      if (!tickets || tickets.length === 0) {
+        return 'Fetch successfully, but no tickets where this userId';
+      } */
+      return userFile;
+    } catch (error) {
+      throw new BadRequestException('Error fetching tickets', {
+        cause: error,
+        description:
+          'An error occurred while fetching tickets, under this userId',
+      });
+    }
+  }
+
+  getMyTickets(userId: string) {
+    return userId;
   }
 
   updateTicket() {
@@ -154,5 +208,19 @@ export class TicketService {
 
   closeTicket() {
     // TODO: Implement closeTicket
+  }
+
+  async killswitch() {
+    try {
+      await this.prisma.ticket.deleteMany({});
+      await this.prisma.ticketFile.deleteMany({});
+      await this.prisma.userFile.deleteMany({});
+      await this.prisma.user.deleteMany({});
+      await this.prisma.ticketMessage.deleteMany({});
+
+      return 'All tickets and related data have been deleted successfully';
+    } catch (error) {
+      throw new Error(error);
+    }
   }
 }

@@ -1,7 +1,9 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  Param,
   Patch,
   Post,
   Query,
@@ -47,21 +49,28 @@ export class TicketController {
   }
 
   @Get('by-moderator/:moderatorId')
-  getAllTicketsByModeratorId() {
+  @RequiredRoles(UserRoles.ADMIN, UserRoles.MODERATOR)
+  getAllTicketsByModeratorId(@Param('moderatorId') moderatorId: string) {
     // Implement logic to get all tickets by moderator ID
-    return this.ticketService.getAllTicketsByModeratorId();
+    return this.ticketService.getAllTicketsByModeratorId(moderatorId);
   }
 
   @Get('by-user/:userId')
-  getAllTicketsByUserId() {
+  getAllTicketsByUserId(@Param('userId') userId: string) {
     // Implement logic to get all tickets by user ID
-    return this.ticketService.getAllTicketsByUserId();
+    return this.ticketService.getAllTicketsByUserId(userId);
   }
 
   @Get(':id')
   getTicketById() {
     // Implement logic to get ticket by ID
     return this.ticketService.getTicketById();
+  }
+
+  @Get('myTickets')
+  getMyTickets(@getCurrentUser('id') userId: string) {
+    // Implement logic to get my tickets
+    return this.ticketService.getMyTickets(userId);
   }
 
   @Patch(':id')
@@ -92,5 +101,11 @@ export class TicketController {
   closeTicket() {
     // Implement logic to close a ticket
     return this.ticketService.closeTicket();
+  }
+
+  @Delete('killswitch')
+  @RequiredRoles(UserRoles.ADMIN)
+  async killswitch() {
+    return this.ticketService.killswitch();
   }
 }
