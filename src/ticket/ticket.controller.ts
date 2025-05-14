@@ -10,19 +10,21 @@ import {
 } from '@nestjs/common';
 import { TicketService } from './ticket.service';
 import { getCurrentUser } from 'src/common/decorators';
-import { CreateTicketDto } from './dto';
+import { CreateTicketDto, GetTicketQueryDto } from './dto';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
+import { RequiredRoles } from 'src/common/decorators/roles.decorator';
+import { UserRoles } from '@prisma/client';
 
-@Controller('ticket')
+@Controller('tickets')
 export class TicketController {
   constructor(
     private ticketService: TicketService,
     private cloudinaryService: CloudinaryService,
   ) {}
 
-  @Post('createTicket')
+  @Post('create')
   @UseInterceptors(
     FilesInterceptor('files', 5, {
       // Limit to 5 files
@@ -38,9 +40,10 @@ export class TicketController {
     return this.ticketService.createTicket(userId, dto, files);
   }
 
-  @Get()
-  getTickets() {
-    return this.ticketService.getTickets();
+  @Get('all')
+  @RequiredRoles(UserRoles.ADMIN, UserRoles.MODERATOR)
+  getTickets(@Query() query: GetTicketQueryDto) {
+    return this.ticketService.getTickets(query);
   }
 
   @Get('by-moderator/:moderatorId')

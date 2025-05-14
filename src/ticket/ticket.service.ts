@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { CreateTicketDto } from './dto';
+import { CreateTicketDto, GetTicketQueryDto } from './dto';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 
 @Injectable()
@@ -95,8 +95,33 @@ export class TicketService {
 
   createTicketMessage() {}
 
-  getTickets() {
-    // TODO: Implement getTickets
+  async getTickets(query: GetTicketQueryDto) {
+    const {
+      page = 1,
+      limit = 10,
+      status,
+      sortBy = 'createdAt',
+      sortDirection = 'desc',
+    } = query;
+
+    console.log('status', status);
+
+    console.log('query', query);
+
+    const tickets = await this.prisma.ticket.findMany({
+      where: { status: status ?? undefined },
+      take: limit,
+      skip: (page - 1) * limit,
+      orderBy: {
+        [sortBy]: sortDirection,
+      },
+    });
+
+    if (!tickets || tickets.length === 0) {
+      return 'Fetch successfully, but no tickets found';
+    } else {
+      return tickets;
+    }
   }
 
   getAllTicketsByModeratorId() {
