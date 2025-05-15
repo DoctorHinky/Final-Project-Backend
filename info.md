@@ -115,11 +115,11 @@
 
 ### _Tickets_
 
-- [ ] createTicket -> einstiegspunkt
-- [ ] getTickets -> hier mit optional filter aber dafault open
-- [ ] getAllTicketsByModeratorId
-- [ ] getAllTicketsByUserId -> im default viellicht getMyTickets / oder eigene Funktion
-- [ ] updateTicket -> hier müssen die Arbeiten und beschreibungen in die Tickets rein
+- [x] createTicket -> einstiegspunkt
+- [x] getTickets -> hier mit optional filter aber dafault open
+- [x] getAllTicketsByModeratorId
+- [x] getAllTicketsByUserId
+- [x] getMyTickets
 - [ ] takeTicket -M
 - [ ] reassignTicket ? bei Krankheit oder interessenkonflikten
 - [ ] getTicketById -M
