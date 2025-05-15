@@ -326,8 +326,7 @@ export class TicketService {
       where: {
         NOT: { status: 'CLOSED' },
         updatedAt: {
-          // lte: new Date(Date.now() - 1000 * 60 * 60 * 24 * 14), // 2 weeks
-          lte: new Date(Date.now() - 1000 * 60), // 2 weeks
+          lte: new Date(Date.now() - 1000 * 60 * 60 * 24 * 14), // 2 weeks
         },
       },
       include: {
@@ -366,8 +365,7 @@ export class TicketService {
     const ticketsToDelete = await this.prisma.ticket.findMany({
       where: {
         AND: { status: 'CLOSED' },
-        // updatedAt: { lte: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30) },
-        updatedAt: { lte: new Date(Date.now() - 1000 * 60) },
+        updatedAt: { lte: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30) },
       },
       select: {
         id: true,
