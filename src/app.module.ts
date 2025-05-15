@@ -9,6 +9,7 @@ import { SeedModule } from 'Admins/Seeder.module';
 import { RolesGuard } from './common/guards/roles.guard';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { TicketModule } from './ticket/ticket.module';
+import { PostModule } from './post/post.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { TicketModule } from './ticket/ticket.module';
     SeedModule,
     CloudinaryModule,
     TicketModule,
+    PostModule,
   ],
   providers: [
     { provide: 'APP_GUARD', useClass: AtGuard },
