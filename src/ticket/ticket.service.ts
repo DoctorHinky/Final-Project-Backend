@@ -15,31 +15,29 @@ export class TicketService {
     private cloudinaryService: CloudinaryService,
   ) {}
 
+  private async ensureUserFile(userId: string): Promise<UserFile> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { userFileId: true },
+    });
+    if (user?.userFileId) {
+      const exsitingUserFile = await this.prisma.userFile.findUnique({
+        where: { id: user.userFileId },
+      });
+      if (exsitingUserFile) return exsitingUserFile;
+    }
+    return this.prisma.userFile.create({
+      data: { user: { connect: { id: userId } } },
+    });
+  }
+
   async createTicket(
     userId: string,
     dto: CreateTicketDto,
     files: Express.Multer.File[],
   ) {
-    let userFile: UserFile | null = null;
     try {
-      const user = await this.prisma.user.findUnique({
-        where: { id: userId },
-        select: { userFileId: true },
-      });
-
-      if (user?.userFileId) {
-        userFile = await this.prisma.userFile.findUnique({
-          where: { id: user.userFileId },
-        });
-      }
-
-      if (!userFile) {
-        userFile = await this.prisma.userFile.create({
-          data: {
-            user: { connect: { id: userId } },
-          },
-        });
-      }
+      const userFile = await this.ensureUserFile(userId);
 
       const ticket = await this.prisma.ticket.create({
         data: {
@@ -337,14 +335,9 @@ export class TicketService {
         },
       },
     });
-    console.log('inActiveTickets', inActiveTickets);
-    console.log('inActiveTickets.length', inActiveTickets.length);
 
     if (inActiveTickets.length !== 0) {
-      console.log('we have inActiveTickets');
       for (const ticket of inActiveTickets) {
-        console.log('we work on: ', ticket.id);
-
         const newestMessage = await this.prisma.ticketMessage.findFirst({
           where: { ticketId: ticket.id },
           orderBy: { createdAt: 'desc' }, // neueste Nachricht zuerst
@@ -354,10 +347,7 @@ export class TicketService {
           const ticketUserId = ticket.userFile.user?.id;
 
           if (ticketUserId && ticketUserId !== newestMessage.authorId) {
-            await this.prisma.ticket.update({
-              where: { id: ticket.id },
-              data: { status: 'CLOSED' },
-            });
+            await this.closeTicket(ticket.id);
           }
         }
       }

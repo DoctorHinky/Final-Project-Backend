@@ -120,19 +120,19 @@
 - [x] getAllTicketsByModeratorId
 - [x] getAllTicketsByUserId
 - [x] getMyTickets
-- [ ] takeTicket -M
-- [ ] reassignTicket ? bei Krankheit oder interessenkonflikten
-- [ ] getTicketById -M
-- [ ] cancelTicket -U -> wenn das Problem sich erledigt hat
-- [ ] closeTicket -M + U
+- [x] takeTicket -M
+- [x] reassignTicket ? bei Krankheit oder interessenkonflikten
+- [x] getTicketById -M
+- [x] cancelTicket -U -> wenn das Problem sich erledigt hat
+- [x] closeTicket -M + U
 
 ---
 
 ### _Moderation_
 
-- [ ] takeTicket
-- [ ] closeTicket
-- [ ] reopenTicket
+- [x] takeTicket
+- [x] closeTicket
+- [?] reopenTicket
 - [ ] openModLog ? wichtig oder?
       sonstige Funktionen werden von anderen Modulen abgedeckt:
 - erstellen von Autoren über updateUser
