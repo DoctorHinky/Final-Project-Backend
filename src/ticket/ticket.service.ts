@@ -16,66 +16,36 @@ export class TicketService {
     dto: CreateTicketDto,
     files: Express.Multer.File[],
   ) {
-    let UserFile: UserFile | null = null;
+    let userFile: UserFile | null = null;
     try {
-      // sicherstellen das wie eine Akte habe
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
         select: { userFileId: true },
       });
+
       if (user?.userFileId) {
-        UserFile = await this.prisma.userFile.findUnique({
-          where: { id: user?.userFileId },
-        });
-      } else {
-        try {
-          const createdFile = await this.prisma.userFile.create({
-            data: {},
-          });
-
-          await this.prisma.user.update({
-            where: { id: userId },
-            data: { userFileId: createdFile.id },
-          });
-
-          const UserWithFile = await this.prisma.user.findUnique({
-            where: { id: userId },
-            select: { userFileId: true },
-          });
-
-          if (!UserWithFile?.userFileId) {
-            throw new BadRequestException('UserFile not found', {
-              description: 'UserFile not found',
-            });
-          }
-          UserFile = await this.prisma.userFile.findUnique({
-            where: { id: UserWithFile?.userFileId },
-          });
-        } catch (error) {
-          throw new BadRequestException('UserFile creation failed', {
-            cause: error,
-            description: 'An error occurred while creating the UserFile',
-          });
-        }
-      }
-      if (!UserFile) {
-        throw new BadRequestException('User has no File', {
-          description: 'User has no file, and could not be created',
+        userFile = await this.prisma.userFile.findUnique({
+          where: { id: user.userFileId },
         });
       }
 
-      // ticket erstellen
+      if (!userFile) {
+        userFile = await this.prisma.userFile.create({
+          data: {
+            user: { connect: { id: userId } },
+          },
+        });
+      }
+
       const ticket = await this.prisma.ticket.create({
         data: {
-          userFileId: UserFile.id,
+          userFileId: userFile.id,
           quickDescription: dto.quickDescription,
           description: dto.description,
         },
       });
 
-      // datein hochladen
-      const uploadFile = files.map(async (file) => {
-        console.log('file upload', file.originalname);
+      const uploadTasks = files.map(async (file) => {
         const result = await this.cloudinaryService.uploadFile(
           file,
           `ticket/${ticket.id}`,
@@ -90,9 +60,9 @@ export class TicketService {
         });
       });
 
-      await Promise.all(uploadFile);
+      await Promise.all(uploadTasks);
 
-      return 'Ticket created successfully'; // später dann geht all ticket of user
+      return 'Ticket created successfully';
     } catch (error) {
       if (error instanceof BadRequestException) {
         throw error;
@@ -157,22 +127,14 @@ export class TicketService {
 
   async getAllTicketsByUserId(userId: string) {
     try {
-      const userFile = await this.prisma.userFile.findUnique({
-        where: { userId: userId },
+      const tickets: Ticket[] | null = await this.prisma.ticket.findMany({
+        where: { userFile: { user: { id: userId } } },
       });
-      console.log('userFile', userFile);
 
-      if (!userFile) {
-        throw new BadRequestException('Cant fetch tickets', {
-          description: 'User has no file',
-        });
-      }
-
-      /* const tickets: Ticket[] = userFile.tickets;
       if (!tickets || tickets.length === 0) {
-        return 'Fetch successfully, but no tickets where this userId';
-      } */
-      return userFile;
+        return 'Fetch successfully, but no tickets where this user is the owner';
+      }
+      return tickets;
     } catch (error) {
       throw new BadRequestException('Error fetching tickets', {
         cause: error,
@@ -182,10 +144,39 @@ export class TicketService {
     }
   }
 
-  getMyTickets(userId: string) {
-    return userId;
+  async getMyTickets(userId: string) {
+    try {
+      return await this.prisma.ticket.findMany({
+        where: {
+          userFile: {
+            user: {
+              id: userId,
+            },
+          },
+        },
+      });
+    } catch (error) {
+      throw new BadRequestException('Error fetching tickets', {
+        cause: error,
+        description: 'An error occurred while fetching tickets',
+      });
+    }
   }
 
+  async getTicketById(id: string) {
+    try {
+      const ticket: Ticket | null = await this.prisma.ticket.findUnique({
+        where: { id },
+      });
+
+      return ticket;
+    } catch (error) {
+      throw new BadRequestException('Error fetching ticket', {
+        cause: error,
+        description: 'An error occurred while fetching the ticket by ID',
+      });
+    }
+  }
   updateTicket() {
     // TODO: Implement updateTicket
   }
@@ -198,10 +189,6 @@ export class TicketService {
     // TODO: Implement reassignTicket
   }
 
-  getTicketById() {
-    // TODO: Implement getTicketById
-  }
-
   cancelTicket() {
     // TODO: Implement cancelTicket
   }
@@ -212,15 +199,29 @@ export class TicketService {
 
   async killswitch() {
     try {
-      await this.prisma.ticket.deleteMany({});
       await this.prisma.ticketFile.deleteMany({});
-      await this.prisma.userFile.deleteMany({});
-      await this.prisma.user.deleteMany({});
       await this.prisma.ticketMessage.deleteMany({});
 
-      return 'All tickets and related data have been deleted successfully';
+      await this.prisma.ticket.deleteMany({});
+
+      await this.prisma.readPost.deleteMany({});
+      await this.prisma.rating.deleteMany({});
+      await this.prisma.comment.deleteMany({});
+      await this.prisma.post.deleteMany({});
+
+      await this.prisma.friendRequest.deleteMany({});
+      await this.prisma.friendship.deleteMany({});
+
+      await this.prisma.application.deleteMany({});
+
+      await this.prisma.userFile.deleteMany({});
+
+      await this.prisma.user.deleteMany({});
+
+      return 'Killswitch successfully, all data deleted';
     } catch (error) {
-      throw new Error(error);
+      console.error('error while executing Killswitch', error);
+      throw new Error('Killswitch failed: ' + (error as Error).message);
     }
   }
 }

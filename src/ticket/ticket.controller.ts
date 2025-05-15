@@ -62,9 +62,9 @@ export class TicketController {
   }
 
   @Get(':id')
-  getTicketById() {
+  getTicketById(@Param('id') id: string) {
     // Implement logic to get ticket by ID
-    return this.ticketService.getTicketById();
+    return this.ticketService.getTicketById(id);
   }
 
   @Get('myTickets')

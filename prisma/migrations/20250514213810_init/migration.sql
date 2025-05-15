@@ -49,7 +49,6 @@ CREATE TABLE "User" (
 -- CreateTable
 CREATE TABLE "UserFile" (
     "id" UUID NOT NULL,
-    "userId" UUID,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -223,9 +222,6 @@ CREATE UNIQUE INDEX "User_phone_key" ON "User"("phone");
 CREATE UNIQUE INDEX "User_userFileId_key" ON "User"("userFileId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "UserFile_userId_key" ON "UserFile"("userId");
-
--- CreateIndex
 CREATE UNIQUE INDEX "Friendship_initiatorId_receiverId_key" ON "Friendship"("initiatorId", "receiverId");
 
 -- CreateIndex
@@ -233,6 +229,9 @@ CREATE UNIQUE INDEX "FriendRequest_senderId_receiverId_key" ON "FriendRequest"("
 
 -- CreateIndex
 CREATE UNIQUE INDEX "ReadPost_userId_postId_key" ON "ReadPost"("userId", "postId");
+
+-- AddForeignKey
+ALTER TABLE "User" ADD CONSTRAINT "User_userFileId_fkey" FOREIGN KEY ("userFileId") REFERENCES "UserFile"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "User" ADD CONSTRAINT "User_parent1Id_fkey" FOREIGN KEY ("parent1Id") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -245,9 +244,6 @@ ALTER TABLE "User" ADD CONSTRAINT "User_deletedBy_fkey" FOREIGN KEY ("deletedBy"
 
 -- AddForeignKey
 ALTER TABLE "User" ADD CONSTRAINT "User_moderatedBy_fkey" FOREIGN KEY ("moderatedBy") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "UserFile" ADD CONSTRAINT "UserFile_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Application" ADD CONSTRAINT "Application_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
