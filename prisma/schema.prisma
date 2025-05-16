@@ -250,25 +250,33 @@ enum TicketStatus {
   CANCELED
 }
 
+model Chapter {
+  id String @id @default(uuid()) @db.Uuid
+  title String?
+  content String
+  image String?
+  publicid_image String? // notwendig zum löschen
+  order Int // reihenfolge der Kapitel
+
+  // post relation
+  postId String @db.Uuid
+  post Post @relation(fields: [postId], references: [id]) // hier wird dann eingetragen zu welchem Post das Kapitel gehört
+}
+
 model Post {
   id                String   @id @default(uuid()) @db.Uuid
   title             String
-  content           String
+  quickDescription String // das wird dann in der Übersicht gezeigt, und beim Klick wird der Post geladen, das entlastet die Datenbank
+  // content           String? // wir bruauchen hier kein content, da wir die Kapitel haben und auch wenn es nur ein Kapitel gibt wird der content in diesem gespeichert
   image             String? // optional | claudinary
+  publicid_image    String? // notwendig wenn man löschen will
   tags              String[] // array of strings
   ageRestriction    Int // notwendig da wir für unterschiedliche Altersgruppen unterschiedliche Inhalte haben
   isCertifiedAuthor Boolean  @default(false) // wir wollten das Pädagogische Authoren Hervorgehoben werden
 
   // Capital Controlling | self-relations
-  preCapital       Post?   @relation("PrePostRelation", fields: [preCapitalId], references: [id])
-  preCapitalId     String? @db.Uuid // wenn es einen Vorgänger gibt, dann wird hier der Vorgänger eingetragen
-  nextCapitalPosts Post[]  @relation("PrePostRelation") // added opposite relation field
+  chapters Chapter[]
 
-  nextCapital      Post?   @relation("NextPostRelation", fields: [nextCapitalId], references: [id])
-  nextCapitalId    String? @db.Uuid // wenn es einen Nachfolger gibt, dann wird hier der Nachfolger eingetragen
-  prevCapitalPosts Post[]  @relation("NextPostRelation") // added opposite relation field
-
-  capital Int? // wie viele Kapitel der Artikel hat hat
 
   authorId String @db.Uuid
   author   User   @relation("UserPosts", fields: [authorId], references: [id])
@@ -287,12 +295,56 @@ model Post {
   comments Comment[] @relation("PostComments")
   ratings  Rating[]  @relation("PostRatings")
 
+  // quiz
+  quiz Quiz? @relation("PostQuiz")
+
   // admin meta
   isDeleted     Boolean   @default(false)
   deletedAt     DateTime?
   deletedBy     String?   @db.Uuid // userId
   deletedByUser User?     @relation("PostDeletedBy", fields: [deletedBy], references: [id]) // userId -> hier wird dann eingetragen wer den Post gelöscht hat
   deleteReason  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+}
+
+model Quiz {
+  id     String @id @default(uuid()) @db.Uuid
+  postId String @unique @db.Uuid
+  post   Post   @relation("PostQuiz" ,fields: [postId], references: [id])
+
+  title   String
+
+  // questions
+  questions QuizQuestion[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model QuizQuestion {
+  id     String @id @default(uuid()) @db.Uuid
+  quizId String @db.Uuid
+  quiz   Quiz   @relation(fields: [quizId], references: [id])
+
+  question String // die Frage
+
+  // answers
+  answers QuizAnswer[]
+  explanation String? // erklärung der richtigen Antwort
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+model QuizAnswer {
+  id     String @id @default(uuid()) @db.Uuid
+  questionId String @db.Uuid
+  question   QuizQuestion @relation(fields: [questionId], references: [id])
+
+  answer   String // die Antwort
+  isCorrect Boolean // ist die Antwort richtig?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
