@@ -12,7 +12,6 @@ import {
 import { TicketService } from './ticket.service';
 import { getCurrentUser, PublicRoute } from 'src/common/decorators';
 import { CreateTicketDto, GetTicketQueryDto, TicketMessageDto } from './dto';
-import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { RequiredRoles } from 'src/common/decorators/roles.decorator';
@@ -20,10 +19,7 @@ import { UserRoles } from '@prisma/client';
 
 @Controller('tickets')
 export class TicketController {
-  constructor(
-    private ticketService: TicketService,
-    private cloudinaryService: CloudinaryService,
-  ) {}
+  constructor(private ticketService: TicketService) {}
 
   @Post('create')
   @UseInterceptors(

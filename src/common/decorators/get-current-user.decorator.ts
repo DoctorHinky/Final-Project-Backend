@@ -10,7 +10,7 @@ export const getCurrentUser = createParamDecorator(
       // so wird nur dann der user zurückgegeben, wenn data gesetzt ist
       return req.user?.[data];
     }
-
+    console.log('req.user', req.user);
     return req.user;
   },
 );

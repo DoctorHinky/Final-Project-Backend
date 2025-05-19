@@ -151,6 +151,6 @@
 
 ### Cronjobs
 
-- [ ] cloudinary-cleanup
+- [ ] cloudinary-cleanup -> profilbilder, posts bilder
 - [ ] delete old thinks -> das muss in jedes modul rein
 - [ ] closed tickets delete

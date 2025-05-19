@@ -17,12 +17,14 @@ model User {
   email              String    @unique // needed for verification or restoring
   phone              String    @unique // for 2FA 
   role               UserRoles @default(ADULT)
+  isPedagogicalAuthor Boolean @default(false) // wir wollten das Pädagogische Authoren Hervorgehoben werden
   password           String // hashed password
   hashedRefreshToken String? // hashed refresh token
   profilePicture     String? // optional | claudinary
   publicid_picture   String? // optional | claudinary
   shortDescription   String? // optional
   bio                String? // optional
+
 
   // UserFile relation - fixed one-to-one relation
   userFile   UserFile? @relation("UserToFile", fields: [userFileId], references: [id])
@@ -255,7 +257,7 @@ model Chapter {
   title String?
   content String
   image String?
-  publicid_image String? // notwendig zum löschen
+  publicId_image String? // notwendig zum löschen
   order Int // reihenfolge der Kapitel
 
   // post relation
@@ -269,7 +271,7 @@ model Post {
   quickDescription String // das wird dann in der Übersicht gezeigt, und beim Klick wird der Post geladen, das entlastet die Datenbank
   // content           String? // wir bruauchen hier kein content, da wir die Kapitel haben und auch wenn es nur ein Kapitel gibt wird der content in diesem gespeichert
   image             String? // optional | claudinary
-  publicid_image    String? // notwendig wenn man löschen will
+  publicId_image    String? // notwendig wenn man löschen will
   tags              String[] // array of strings
   ageRestriction    Int // notwendig da wir für unterschiedliche Altersgruppen unterschiedliche Inhalte haben
   isCertifiedAuthor Boolean  @default(false) // wir wollten das Pädagogische Authoren Hervorgehoben werden
@@ -338,13 +340,14 @@ model QuizQuestion {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
 model QuizAnswer {
   id     String @id @default(uuid()) @db.Uuid
   questionId String @db.Uuid
   question   QuizQuestion @relation(fields: [questionId], references: [id])
 
   answer   String // die Antwort
-  isCorrect Boolean // ist die Antwort richtig?
+  isCorrect Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

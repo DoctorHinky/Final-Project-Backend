@@ -10,6 +10,8 @@ import { RolesGuard } from './common/guards/roles.guard';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { TicketModule } from './ticket/ticket.module';
 import { PostModule } from './post/post.module';
+import { ChapterModule } from './chapter/chapter.module';
+import { QuizModule } from './quiz/quiz.module';
 
 @Module({
   imports: [
@@ -23,6 +25,8 @@ import { PostModule } from './post/post.module';
     CloudinaryModule,
     TicketModule,
     PostModule,
+    ChapterModule,
+    QuizModule,
   ],
   providers: [
     { provide: 'APP_GUARD', useClass: AtGuard },
