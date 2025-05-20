@@ -258,7 +258,6 @@ model Chapter {
   content String
   image String?
   publicId_image String? // notwendig zum löschen
-  order Int // reihenfolge der Kapitel
 
   // post relation
   postId String @db.Uuid

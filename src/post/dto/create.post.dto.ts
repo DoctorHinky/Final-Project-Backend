@@ -30,10 +30,6 @@ export class ChapterDto {
   @IsOptional()
   @IsString()
   publicId_image: string;
-
-  @IsInt()
-  @Min(1)
-  order: number;
 }
 
 export class QuizDto {

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { BasePrismaService } from 'src/common/utilitys/base-prisma.service';
-import { ChapterDto } from 'src/post/dto';
+import { ChapterDto, CreateChapterDto } from 'src/post/dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
@@ -27,6 +27,17 @@ export class ChapterService extends BasePrismaService {
         });
       }),
     );
+  }
+
+  async addNewChapter(postId: string, data: CreateChapterDto) {
+    const prisma = this.getPrisma();
+
+    return await prisma.chapter.create({
+      data: {
+        ...data,
+        postId: postId,
+      },
+    });
   }
 }
 /* updateChapter() {

@@ -13,7 +13,7 @@ import {
 import { AnyFilesInterceptor, FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { PostUploadInterceptor } from 'src/common/interceptors/file-upload.interceptor';
-import { PagePostDto, UpdateMainPostDataDto } from './dto';
+import { CreateChapterDto, PagePostDto, UpdateMainPostDataDto } from './dto';
 import { getCurrentUser } from 'src/common/decorators';
 import { PostService } from './post.service';
 import { RequiredRoles } from 'src/common/decorators/roles.decorator';
@@ -72,7 +72,22 @@ export class PostController {
     @UploadedFile() file: Express.Multer.File,
     @Body() dto: UpdateMainPostDataDto,
   ) {
-    console.log('update post', dto);
     return await this.PostService.updatePost(user, postId, dto, file);
+  }
+
+  @Patch('addChapter/:postId')
+  @UseInterceptors(
+    FileInterceptor('image', {
+      storage: memoryStorage(),
+      limits: { fileSize: 15 * 1024 * 1024 },
+    }),
+  )
+  async addChapter(
+    @getCurrentUser('id') userId: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Body() dto: CreateChapterDto,
+    @Param('postId') postId: string,
+  ) {
+    return await this.PostService.addChapter(postId, userId, dto, file);
   }
 }

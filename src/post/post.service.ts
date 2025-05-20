@@ -7,7 +7,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { CreatePost, PagePostDto, UpdateMainPostDataDto } from './dto';
+import {
+  CreateChapterDto,
+  CreatePost,
+  PagePostDto,
+  UpdateMainPostDataDto,
+} from './dto';
 import { ChapterService } from 'src/chapter/chapter.service';
 import { QuizService } from 'src/quiz/quiz.service';
 import { calcAge } from 'src/common/helper/dates.helper';
@@ -333,8 +338,41 @@ export class PostService {
     };
   }
 
-  addChapter() {
-    return 'addChapter';
+  async addChapter(
+    postId: string,
+    userId: string,
+    data: any,
+    file?: Express.Multer.File,
+  ) {
+    const post = await this.prisma.post.findUnique({
+      where: { id: postId },
+      select: { authorId: true, published: true },
+    });
+
+    if (!post) {
+      throw new NotFoundException('Post not found');
+    }
+
+    if (post.authorId !== userId) {
+      throw new ForbiddenException('You are not the author of this post');
+    }
+
+    let image;
+    if (file) {
+      image = await this.cloudinaryService.uploadFile(file, 'posts/chapters');
+
+      if (!image || !image.secure_url) {
+        throw new BadRequestException('Failed to upload image');
+      }
+    }
+
+    const updatedDTO: CreateChapterDto = {
+      ...data,
+      image: image?.secure_url ?? null,
+      publicId_image: image?.public_id ?? null,
+    };
+
+    return this.chapterService.addNewChapter(postId, updatedDTO);
   }
   addQuiz() {
     // hier wird ein Quiz hinzugefügt
