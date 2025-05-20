@@ -1,19 +1,14 @@
-import {
-  IsOptional,
-  IsString,
-  IsUrl,
-  Length,
-  MinLength,
-} from 'class-validator';
+import { IsOptional, IsString, IsUrl, Length } from 'class-validator';
 
-export class ChapterDto {
+export class UpdateChapterDto {
   @IsOptional()
   @IsString()
   @Length(5, 25)
   title: string;
 
+  @IsOptional()
   @IsString()
-  @MinLength(150)
+  @Length(10, 150)
   content: string;
 
   @IsOptional()

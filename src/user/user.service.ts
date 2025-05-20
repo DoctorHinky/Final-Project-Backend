@@ -65,7 +65,6 @@ export class UserService {
       where: { username: userName, NOT: { isDeleted: true } },
       select: {
         username: true,
-        publishedPosts: true,
         birthdate: true,
         deactivated: true,
       },

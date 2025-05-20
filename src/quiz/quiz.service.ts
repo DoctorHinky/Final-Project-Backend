@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { BasePrismaService } from 'src/common/utilitys/base-prisma.service';
-import { QuizDto } from 'src/post/dto';
+import { CreateQuizDto } from 'src/post/dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
@@ -12,7 +12,7 @@ export class QuizService extends BasePrismaService {
 
   async createQuiz(
     postId: string,
-    data: QuizDto,
+    data: CreateQuizDto,
     tx?: PrismaService | Prisma.TransactionClient,
   ) {
     const prisma = this.getPrisma(tx);

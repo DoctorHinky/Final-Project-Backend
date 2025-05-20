@@ -13,7 +13,13 @@ import {
 import { AnyFilesInterceptor, FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { PostUploadInterceptor } from 'src/common/interceptors/file-upload.interceptor';
-import { CreateChapterDto, PagePostDto, UpdateMainPostDataDto } from './dto';
+import {
+  ChapterDto,
+  CreateQuizDto,
+  PagePostDto,
+  UpdateChapterDto,
+  UpdateMainPostDataDto,
+} from './dto';
 import { getCurrentUser } from 'src/common/decorators';
 import { PostService } from './post.service';
 import { RequiredRoles } from 'src/common/decorators/roles.decorator';
@@ -38,6 +44,14 @@ export class PostController {
     @Param('postId') postId: string,
   ) {
     return this.PostService.getPostById(userId, role, postId);
+  }
+
+  @Get('getPostByAuthor/:authorId')
+  async getPostByAuthor(
+    @getCurrentUser('roles') role: UserRoles,
+    @Param('authorId') authorId: string,
+  ) {
+    return await this.PostService.getPostByAuthor(role, authorId);
   }
 
   @Post('create')
@@ -67,7 +81,7 @@ export class PostController {
     }),
   )
   async updatePost(
-    @getCurrentUser() user: { id: string; role: UserRoles },
+    @getCurrentUser() user: { id: string; roles: UserRoles },
     @Param('postId') postId: string,
     @UploadedFile() file: Express.Multer.File,
     @Body() dto: UpdateMainPostDataDto,
@@ -85,9 +99,62 @@ export class PostController {
   async addChapter(
     @getCurrentUser('id') userId: string,
     @UploadedFile() file: Express.Multer.File,
-    @Body() dto: CreateChapterDto,
+    @Body() dto: ChapterDto,
     @Param('postId') postId: string,
   ) {
     return await this.PostService.addChapter(postId, userId, dto, file);
   }
+
+  @Patch('updateChapter/:postId/:chapterId')
+  @UseInterceptors(
+    FileInterceptor('image', {
+      storage: memoryStorage(),
+      limits: { fileSize: 15 * 1024 * 1024 },
+    }),
+  )
+  async updateChapter(
+    @getCurrentUser() user: { id: string; roles: UserRoles },
+    @UploadedFile() file: Express.Multer.File,
+    @Body() dto: UpdateChapterDto,
+    @Param('postId') postId: string,
+    @Param('chapterId') chapterId: string,
+  ) {
+    return await this.PostService.updateChapter(
+      postId,
+      user,
+      dto,
+      chapterId,
+      file,
+    );
+  }
+
+  @Patch('publishPost/:postId')
+  @RequiredRoles(UserRoles.AUTHOR)
+  async publishPost(
+    @getCurrentUser('id') userId: string,
+    @Param('postId') postId: string,
+  ) {
+    return await this.PostService.publishPost(userId, postId);
+  }
+
+  @Patch('unpublishPost/:postId')
+  @RequiredRoles(UserRoles.AUTHOR, UserRoles.ADMIN, UserRoles.MODERATOR)
+  async unpublishPost(
+    @getCurrentUser() user: { id: string; roles: UserRoles },
+    @Param('postId') postId: string,
+  ) {
+    return await this.PostService.unpublishPost(user, postId);
+  }
+
+  @Patch('addQuiz/:postId')
+  @RequiredRoles(UserRoles.AUTHOR)
+  async addQuiz(
+    @getCurrentUser('id') userId: string,
+    @Param('postId') postId: string,
+    @Body() dto: CreateQuizDto,
+  ) {
+    return await this.PostService.addQuiz(userId, postId, dto);
+  }
+
+  // remove pictures from post, chapter
 }

@@ -3,20 +3,24 @@
 import {
   BadRequestException,
   ForbiddenException,
+  HttpException,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import {
-  CreateChapterDto,
+  ChapterDto,
   CreatePost,
+  CreateQuizDto,
   PagePostDto,
+  UpdateChapterDto,
   UpdateMainPostDataDto,
 } from './dto';
 import { ChapterService } from 'src/chapter/chapter.service';
 import { QuizService } from 'src/quiz/quiz.service';
 import { calcAge } from 'src/common/helper/dates.helper';
-import { UserRoles } from '@prisma/client';
+import { Post, UserRoles } from '@prisma/client';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 
 @Injectable()
@@ -170,9 +174,41 @@ export class PostService {
     return 'getPostForUser';
   }
 
-  getPostByAuthor() {
-    // das sollte sein, wenn man auf dem Profil von einem Autor ist, damit man alles anzeigen kann
-    return 'getPostByAuthor';
+  async getPostByAuthor(role: UserRoles, authorId: string) {
+    try {
+      let posts: Post[] | null = null;
+      if (role === UserRoles.ADMIN || role === UserRoles.MODERATOR) {
+        posts = await this.prisma.post.findMany({
+          where: { authorId },
+          include: {
+            chapters: true,
+            quiz: true,
+          },
+        });
+      } else {
+        posts = await this.prisma.post.findMany({
+          where: { authorId, published: true },
+          include: {
+            chapters: true,
+            quiz: true,
+          },
+        });
+      }
+
+      if (!posts || posts.length === 0) {
+        throw new NotFoundException('Internal error: No posts found');
+      }
+
+      return {
+        message: 'Posts found',
+        data: posts,
+      };
+    } catch (error) {
+      throw new BadRequestException('Failed to fetch posts by author', {
+        cause: error,
+        description: 'Failed to fetch posts by author',
+      });
+    }
   }
 
   // CREATE POST
@@ -183,6 +219,9 @@ export class PostService {
   ) {
     let main;
     let ChImages;
+
+    console.log('data', data);
+
     const mainImage = files.find((f) => f.fieldname === 'image');
     const chapterImages = files.filter((f) =>
       f.fieldname.startsWith('chapterImage_'),
@@ -191,7 +230,7 @@ export class PostService {
       main = await this.cloudinaryService.uploadFile(mainImage, 'posts/main');
 
       if (!main || !main.secure_url) {
-        throw new BadRequestException('failted to upload main image');
+        throw new BadRequestException('failed to upload main image');
       }
     }
 
@@ -216,6 +255,8 @@ export class PostService {
           cause: error,
         });
       }
+    } else {
+      ChImages = [];
     }
 
     const certificated: { isPedagogicalAuthor: boolean } | null =
@@ -250,9 +291,6 @@ export class PostService {
           tags: updatedDTO.tags,
           ageRestriction: updatedDTO.ageRestriction,
           authorId: userId,
-          published: updatedDTO.published,
-          publishedAt: updatedDTO.published ? new Date() : null,
-          publishedBy: updatedDTO.published ? userId : null,
           isCertifiedAuthor: certificated?.isPedagogicalAuthor ?? false,
         },
       });
@@ -269,7 +307,8 @@ export class PostService {
         tx,
       );
 
-      if (data.quiz) {
+      if (data.quiz && Object.keys(data.quiz).length > 0) {
+        console.log('quiz erkannt', data.quiz);
         await this.quizService.createQuiz(newPost.id, updatedDTO.quiz, tx);
       }
       return { message: 'Post created', postId: newPost.id };
@@ -278,13 +317,11 @@ export class PostService {
 
   // UPDATE POST
   async updatePost(
-    user: { id: string; role: UserRoles },
+    user: { id: string; roles: UserRoles },
     postId: string,
     data: UpdateMainPostDataDto,
     file?: Express.Multer.File,
   ) {
-    console.log('data', data);
-
     const post = await this.prisma.post.findUnique({
       where: { id: postId },
       select: { publicId_image: true, authorId: true, published: true },
@@ -308,24 +345,26 @@ export class PostService {
       data.image = image.secure_url;
       data.publicId_image = image.public_id;
     }
+    let updateData: any = { ...data };
 
-    if (data.published) {
-      if (data.published === 'true') {
-        data.published = true;
-      } else if (data.published === 'false') {
-        data.published = false;
+    if (post.authorId !== user.id) {
+      if (
+        user.roles !== UserRoles.ADMIN &&
+        user.roles !== UserRoles.MODERATOR
+      ) {
+        throw new ForbiddenException('You are not the author of this post');
       }
+      updateData = {
+        ...data,
+        published: false,
+        publishedAt: null,
+        moderatorId: user.id,
+      };
+
+      // hier sollte noch die mail an den author geschickt werden, dass der post vom moderator bearbeitet wurde
+    } else {
+      updateData = { ...data };
     }
-
-    const updateData = {
-      ...data,
-      published: data.published,
-      publishedAt: data.published ? new Date() : null,
-      publishedBy: data.published ? user.id : null,
-      moderatorId: user.id !== post?.authorId ? user.id : null,
-    };
-
-    console.log('updateData', updateData);
 
     const updatedPost = await this.prisma.post.update({
       where: { id: postId },
@@ -366,7 +405,7 @@ export class PostService {
       }
     }
 
-    const updatedDTO: CreateChapterDto = {
+    const updatedDTO: ChapterDto = {
       ...data,
       image: image?.secure_url ?? null,
       publicId_image: image?.public_id ?? null,
@@ -374,22 +413,183 @@ export class PostService {
 
     return this.chapterService.addNewChapter(postId, updatedDTO);
   }
-  addQuiz() {
-    // hier wird ein Quiz hinzugefügt
-    return 'addQuiz';
-  }
-  addImage() {
-    // hier wird ein Bild hinzugefügt
-    return 'addImage';
+
+  async updateChapter(
+    postId: string,
+    user: { id: string; roles: UserRoles },
+    data: UpdateChapterDto,
+    chapterId: string,
+    file?: Express.Multer.File,
+  ) {
+    const post = await this.prisma.post.findUnique({
+      where: { id: postId },
+      include: { chapters: true },
+    });
+    const chapter = post?.chapters.find((c) => c.id === chapterId);
+    if (!chapter) {
+      throw new NotFoundException('Chapter not found');
+    }
+
+    if (!post) {
+      throw new NotFoundException('Post not found');
+    }
+
+    if (
+      post.authorId !== user.id &&
+      user.roles !== UserRoles.ADMIN &&
+      user.roles !== UserRoles.MODERATOR
+    ) {
+      throw new ForbiddenException('You are not the author of this post');
+    }
+
+    if (user.roles === UserRoles.ADMIN || user.roles === UserRoles.MODERATOR) {
+      await this.prisma.post.update({
+        where: { id: postId },
+        data: { moderatorId: user.id, published: false, publishedAt: null },
+      });
+    }
+
+    const newChapter = await this.chapterService.updateChapter(
+      chapterId,
+      data,
+      file,
+    );
+
+    return {
+      message: 'Chapter updated',
+      data: newChapter,
+    };
   }
 
-  publishPost() {
-    // hier wird der Post auf öffentlich gesetzt
-    return 'publishPost';
+  async addQuiz(userId: string, postId: string, data: CreateQuizDto) {
+    try {
+      const post = await this.prisma.post.findUnique({
+        where: { id: postId },
+        include: { quiz: true },
+      });
+
+      if (!post) throw new NotFoundException('Database error');
+
+      if (post.authorId !== userId) {
+        throw new UnauthorizedException(
+          'You are not the author of this post, so you cannot add a quiz',
+        );
+      }
+
+      if (post.quiz) {
+        throw new BadRequestException(
+          'Post already has a quiz, you cannot add another one',
+        );
+      }
+
+      const quiz = await this.quizService.createQuiz(postId, data);
+
+      return {
+        message: 'Quiz created',
+        data: quiz,
+      };
+    } catch (err) {
+      if (err instanceof NotFoundException) {
+        throw err;
+      } else if (err instanceof UnauthorizedException) {
+        throw err;
+      } else if (err instanceof BadRequestException) {
+        throw err;
+      } else {
+        throw new BadRequestException('Failed to create quiz', {
+          cause: err,
+          description: 'Failed to create quiz',
+        });
+      }
+    }
   }
-  unpublishPost() {
-    // hier wird der Post auf privat gesetzt
-    return 'unpublishPost';
+
+  async publishPost(userId: string, postId: string) {
+    try {
+      const post = await this.prisma.post.findUnique({
+        where: { id: postId },
+        select: { authorId: true, published: true },
+      });
+
+      if (!post) {
+        throw new NotFoundException('Post not found');
+      }
+      if (post.authorId !== userId) {
+        throw new ForbiddenException('You are not the author of this post');
+      }
+      if (post.published) {
+        throw new BadRequestException('Post is already published');
+      }
+
+      await this.prisma.post.update({
+        where: { id: postId },
+        data: {
+          published: true,
+          publishedAt: new Date(),
+        },
+      });
+
+      return {
+        message: 'Post successfully published',
+      };
+    } catch (err) {
+      if (err instanceof HttpException) {
+        throw err;
+      } else {
+        throw new BadRequestException('Failed to publish post', {
+          cause: err,
+          description: 'Failed to publish post',
+        });
+      }
+    }
+  }
+
+  async unpublishPost(user: { id: string; roles: UserRoles }, postId: string) {
+    try {
+      const post = await this.prisma.post.findUnique({
+        where: { id: postId },
+        select: { authorId: true, published: true },
+      });
+
+      if (!post) {
+        throw new NotFoundException('Post not found');
+      }
+      const isAdmin = user.roles === UserRoles.ADMIN;
+      const isMod = user.roles === UserRoles.MODERATOR;
+      const isAuthor = post.authorId === user.id;
+
+      if (!isAdmin && !isMod && !isAuthor) {
+        throw new ForbiddenException('You are not the author of this post');
+      }
+      if (!post.published) {
+        throw new BadRequestException('Post is already unpublished');
+      }
+      const updateData = {
+        published: false,
+        publishedAt: null,
+      };
+
+      if (isAdmin || isMod) {
+        updateData['moderatorId'] = user.id;
+      }
+      await this.prisma.post.update({
+        where: { id: postId },
+        data: updateData,
+      });
+
+      return {
+        message: 'Post successfully unpublished',
+      };
+    } catch (err) {
+      if (err instanceof HttpException) {
+        throw err;
+      } else {
+        throw new BadRequestException('Failed to unpublish post', {
+          cause: err,
+          description: 'Failed to unpublish post',
+        });
+      }
+    }
   }
 
   // DELETE POST
