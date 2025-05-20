@@ -4,9 +4,10 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { CreatePost, PagePostDto } from './dto';
+import { CreatePost, PagePostDto, UpdateMainPostDataDto } from './dto';
 import { ChapterService } from 'src/chapter/chapter.service';
 import { QuizService } from 'src/quiz/quiz.service';
 import { calcAge } from 'src/common/helper/dates.helper';
@@ -244,9 +245,9 @@ export class PostService {
           tags: updatedDTO.tags,
           ageRestriction: updatedDTO.ageRestriction,
           authorId: userId,
-          published: updatedDTO.isPublished,
-          publishedAt: updatedDTO.isPublished ? new Date() : null,
-          publishedBy: updatedDTO.isPublished ? userId : null,
+          published: updatedDTO.published,
+          publishedAt: updatedDTO.published ? new Date() : null,
+          publishedBy: updatedDTO.published ? userId : null,
           isCertifiedAuthor: certificated?.isPedagogicalAuthor ?? false,
         },
       });
@@ -271,14 +272,68 @@ export class PostService {
   }
 
   // UPDATE POST
-  updatePost() {
-    // hier wird der Post aktualisiert
-    // diese Funktion kann die anderen verwenden um den Post zu aktualisieren
-    return 'updatePost';
+  async updatePost(
+    user: { id: string; role: UserRoles },
+    postId: string,
+    data: UpdateMainPostDataDto,
+    file?: Express.Multer.File,
+  ) {
+    console.log('data', data);
+
+    const post = await this.prisma.post.findUnique({
+      where: { id: postId },
+      select: { publicId_image: true, authorId: true, published: true },
+    });
+
+    if (!post) {
+      throw new NotFoundException('Post not found');
+    }
+
+    if (file) {
+      if (post && post.publicId_image) {
+        await this.cloudinaryService.deleteFile(post.publicId_image);
+      }
+
+      const image = await this.cloudinaryService.uploadFile(file, 'posts/main');
+
+      if (!image || !image.secure_url) {
+        throw new BadRequestException('Failed to upload image');
+      }
+
+      data.image = image.secure_url;
+      data.publicId_image = image.public_id;
+    }
+
+    if (data.published) {
+      if (data.published === 'true') {
+        data.published = true;
+      } else if (data.published === 'false') {
+        data.published = false;
+      }
+    }
+
+    const updateData = {
+      ...data,
+      published: data.published,
+      publishedAt: data.published ? new Date() : null,
+      publishedBy: data.published ? user.id : null,
+      moderatorId: user.id !== post?.authorId ? user.id : null,
+    };
+
+    console.log('updateData', updateData);
+
+    const updatedPost = await this.prisma.post.update({
+      where: { id: postId },
+      data: updateData,
+    });
+
+    return {
+      message: 'Post updated',
+      data: updatedPost,
+    };
   }
 
   addChapter() {
-    // hier wird ein Kapitel hinzugefügt
     return 'addChapter';
   }
   addQuiz() {

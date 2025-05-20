@@ -90,7 +90,7 @@ export class CreatePost {
   publicId_image: string;
 
   @IsInt()
-  @Min(3)
+  @Min(0)
   @Max(18)
   ageRestriction: number;
 
@@ -101,7 +101,7 @@ export class CreatePost {
 
   @IsOptional()
   @IsBoolean()
-  isPublished: boolean;
+  published: boolean;
 
   @ValidateNested({ each: true })
   @Type(() => ChapterDto)

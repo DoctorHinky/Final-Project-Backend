@@ -23,11 +23,10 @@ export class PostUploadInterceptor implements NestInterceptor {
     console.log(body);
     try {
       body.ageRestriction = parseInt(body.ageRestriction);
-      body.isPublished = body.isPublished === 'true';
       body.tags = Array.isArray(body.tags) ? body.tags : [body.tags];
 
       body.chapters = JSON.parse(body.chapters || '[]');
-      body.quiz = JSON.parse(body.quiz || '{');
+      body.quiz = JSON.parse(body.quiz || '{}');
     } catch (err) {
       throw new BadRequestException('Parsing Error in body', {
         cause: err,
