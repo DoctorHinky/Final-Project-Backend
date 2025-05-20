@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   BadRequestException,
   ForbiddenException,
@@ -8,6 +10,8 @@ import { CreatePost, PagePostDto } from './dto';
 import { ChapterService } from 'src/chapter/chapter.service';
 import { QuizService } from 'src/quiz/quiz.service';
 import { calcAge } from 'src/common/helper/dates.helper';
+import { UserRoles } from '@prisma/client';
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 
 @Injectable()
 export class PostService {
@@ -15,6 +19,7 @@ export class PostService {
     private prisma: PrismaService,
     private chapterService: ChapterService,
     private quizService: QuizService,
+    private cloudinaryService: CloudinaryService,
   ) {}
   // GET POST
 
@@ -32,7 +37,6 @@ export class PostService {
         throw new BadRequestException('User not found');
       }
       const age = calcAge(user.birthdate);
-      console.log('age', age);
 
       const whereClause = {
         OR: [{ published: true }, { published: false, authorId: userId }],
@@ -90,6 +94,65 @@ export class PostService {
     }
   }
 
+  async getPostById(userId: string, role: UserRoles, postId: string) {
+    try {
+      let whereClause;
+      if (role === UserRoles.ADMIN || role === UserRoles.MODERATOR) {
+        whereClause = { id: postId };
+      } else {
+        whereClause = {
+          OR: [
+            { published: true, id: postId },
+            { published: false, authorId: userId, id: postId },
+          ],
+        };
+      }
+
+      console.log('whereClause', whereClause);
+
+      const post = await this.prisma.post.findFirst({
+        where: whereClause,
+        include: {
+          chapters: {
+            select: {
+              title: true,
+              content: true,
+              image: true,
+            },
+          },
+          quiz: {
+            select: {
+              title: true,
+              questions: {
+                select: {
+                  question: true,
+                  answers: {
+                    select: {
+                      answer: true,
+                      isCorrect: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!post) throw new BadRequestException('Post not found');
+
+      return {
+        message: 'Post found',
+        data: post,
+      };
+    } catch (err) {
+      throw new BadRequestException('Post not found', {
+        cause: err,
+        description: 'Post not found',
+      });
+    }
+  }
+
   getPostByFilter() {
     // zum beispiel suchen nach einem Namen oder einer Kategorie
     return 'getPostByFilter';
@@ -107,7 +170,48 @@ export class PostService {
   }
 
   // CREATE POST
-  async createPost(userId: string, data: CreatePost) {
+  async createPost(
+    userId: string,
+    data: CreatePost,
+    files: Express.Multer.File[],
+  ) {
+    let main;
+    let ChImages;
+    const mainImage = files.find((f) => f.fieldname === 'image');
+    const chapterImages = files.filter((f) =>
+      f.fieldname.startsWith('chapterImage_'),
+    );
+    if (mainImage) {
+      main = await this.cloudinaryService.uploadFile(mainImage, 'posts/main');
+
+      if (!main || !main.secure_url) {
+        throw new BadRequestException('failted to upload main image');
+      }
+    }
+
+    if (chapterImages.length > 0) {
+      try {
+        // wir verwenden hier allSettled, da wir so die Fehler der einzelnen Uploads sehen können
+        // und trotzdem alle Uploads machen können
+        // wenn wir Promise.all verwenden, wird der erste Fehler geworfen und die anderen Uploads werden nicht gemacht
+        const results = await Promise.allSettled(
+          chapterImages.map((f) =>
+            this.cloudinaryService.uploadFile(f, 'article/chapter'),
+          ),
+        );
+
+        ChImages = results.map((r, i) => {
+          if (r.status === 'fulfilled') return r.value;
+          console.error(`upload failed for chapter ${i}`, r.reason);
+          return null;
+        });
+      } catch (error) {
+        throw new Error('Failed to upload chapter images', {
+          cause: error,
+        });
+      }
+    }
+
     const certificated: { isPedagogicalAuthor: boolean } | null =
       await this.prisma.user.findUnique({
         where: { id: userId },
@@ -119,17 +223,30 @@ export class PostService {
       throw new BadRequestException('User not found');
     }
 
+    const updatedDTO: CreatePost = {
+      ...data,
+      image: main.secure_url,
+      publicId_image: main.public_id,
+      chapters: data.chapters.map((chapter, i) => ({
+        ...chapter,
+        image: ChImages[i]?.secure_url ?? null,
+        publicId_image: ChImages[i]?.public_id ?? null,
+      })),
+    };
+
     return this.prisma.$transaction(async (tx) => {
       const newPost = await this.prisma.post.create({
         data: {
-          title: data.title,
-          quickDescription: data.quickDescription,
-          image: data.image,
-          publicId_image: data.publicId_image,
-          tags: data.tags,
-          ageRestriction: data.ageRestriction,
+          title: updatedDTO.title,
+          quickDescription: updatedDTO.quickDescription,
+          image: updatedDTO.image ?? null,
+          publicId_image: updatedDTO.publicId_image ?? null,
+          tags: updatedDTO.tags,
+          ageRestriction: updatedDTO.ageRestriction,
           authorId: userId,
-          published: data.isPublished,
+          published: updatedDTO.isPublished,
+          publishedAt: updatedDTO.isPublished ? new Date() : null,
+          publishedBy: updatedDTO.isPublished ? userId : null,
           isCertifiedAuthor: certificated?.isPedagogicalAuthor ?? false,
         },
       });
@@ -140,11 +257,16 @@ export class PostService {
         throw new ForbiddenException('Chapters are required, but not provided');
       }
 
-      await this.chapterService.addChapterToPost(newPost.id, data.chapters, tx);
+      await this.chapterService.addChapterToPost(
+        newPost.id,
+        updatedDTO.chapters,
+        tx,
+      );
 
       if (data.quiz) {
-        await this.quizService.createQuiz(newPost.id, data.quiz, tx);
+        await this.quizService.createQuiz(newPost.id, updatedDTO.quiz, tx);
       }
+      return { message: 'Post created', postId: newPost.id };
     });
   }
 

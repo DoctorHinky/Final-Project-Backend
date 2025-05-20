@@ -1,3 +1,8 @@
+/* eslint-disable @typescript-eslint/prefer-promise-reject-errors */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Injectable } from '@nestjs/common';
 import {
   v2 as cloudinary,
@@ -81,28 +86,23 @@ export class CloudinaryService {
   async deleteFile(publicId: string): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       void cloudinary.uploader.destroy(publicId, (error) => {
-        // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
         if (error) return reject(error);
         resolve();
       });
     });
   }
-
-  async cleanCloudProfileImages() {
+  // Old version, newer is not tested yet
+  /*   async cleanCloudProfileImages() {
     const dbPicturesId = await this.userService.getPicture();
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const cloudPictures = await cloudinary.api.resources({
       type: 'upload',
       prefix: 'profile_pictures',
       max_results: 500,
       resource_type: 'image',
-    });
+    }); 
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
     const cloudPicturesId = cloudPictures.resources.map((pic) => pic.public_id);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     const picturesToDelete = cloudPicturesId.filter(
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       (pic) => !dbPicturesId.includes(pic),
     ) as string[];
 
@@ -114,5 +114,47 @@ export class CloudinaryService {
       message: 'Cloudinary cleaned',
       deletedPictures: picturesToDelete,
     };
+  } */
+
+  async cleanCloudProfileImages() {
+    try {
+      const dbPics = await this.userService.getPicture();
+      let ressouces: any[] = [];
+      let nextCursor: string | undefined;
+
+      do {
+        const response = await cloudinary.api.resources({
+          type: 'upload',
+          prefix: 'profile_prictures',
+          max_results: 500,
+          resource_type: 'image',
+          next_cursor: nextCursor,
+        });
+
+        ressouces = [...ressouces, ...response.resources];
+        nextCursor = response.next_cursor;
+      } while (nextCursor);
+
+      const cloudPics = ressouces.map((pic) => pic.public_id);
+      const toDelete = cloudPics.filter(
+        (pic) => !dbPics.includes(pic),
+      ) as string[];
+
+      if (toDelete.length > 0) {
+        await Promise.all(toDelete.map((pic) => this.deleteFile(pic)));
+      }
+
+      // this.logger.log( `${toDelete.length} profile pictures deleted from cloudinary` );
+
+      return {
+        message: 'Profile Pictures cleaned',
+        deleted: toDelete,
+      };
+    } catch (error) {
+      // this.logger.error('Error cleaning cloudinary profile images', error);
+      throw new Error('Error cleaning cloudinary profile images', {
+        cause: error,
+      });
+    }
   }
 }

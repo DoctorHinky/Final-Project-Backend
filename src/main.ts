@@ -4,6 +4,7 @@ import { error } from 'console';
 import { ValidationPipe } from '@nestjs/common';
 import { TrimPipe } from './common/pipes/trim.pipe';
 import { JwtExceptionFilter } from './common/filter/jwt-exception.filter';
+import { MulterExceptionFilter } from './common/filter/Multer-excetion.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -18,7 +19,7 @@ async function bootstrap() {
   app.enableCors({
     origin: '*',
   });
-  app.useGlobalFilters(new JwtExceptionFilter());
+  app.useGlobalFilters(new JwtExceptionFilter(), new MulterExceptionFilter());
   app.useGlobalPipes(
     new TrimPipe(),
     new ValidationPipe({

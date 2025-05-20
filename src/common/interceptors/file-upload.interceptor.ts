@@ -1,10 +1,7 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
-  BadGatewayException,
   BadRequestException,
   CallHandler,
   ExecutionContext,
@@ -17,61 +14,27 @@ import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 @Injectable()
 export class PostUploadInterceptor implements NestInterceptor {
   constructor(private readonly CloudinaryService: CloudinaryService) {}
-  async intercept(
+  intercept(
     context: ExecutionContext,
     next: CallHandler<any>,
-  ): Promise<Observable<any>> {
+  ): Observable<any> {
     const request = context.switchToHttp().getRequest();
     const body = request.body;
-    const files: Express.Multer.File[] = request.files;
-    console.log('request.body', request.body);
-    console.log('request.files', request.files);
-    // main picture
+    console.log(body);
+    try {
+      body.ageRestriction = parseInt(body.ageRestriction);
+      body.isPublished = body.isPublished === 'true';
+      body.tags = Array.isArray(body.tags) ? body.tags : [body.tags];
 
-    body.ageRestriction = parseInt(body.ageRestriction);
-    body.isPublished = body.isPublished === 'true' ? true : false;
-    body.tags = Array.isArray(body.tags) ? body.tags : [body.tags];
-
-    const parseChapters = JSON.parse(body.chapters || '[]');
-    const parseQuiz = JSON.parse(body.quiz || '{}');
-
-    // main image
-    const mainImage = files.find((f) => f.fieldname === 'image');
-    if (mainImage) {
-      const result = await this.CloudinaryService.uploadFile(
-        mainImage,
-        'posts/mainImage',
-      );
-
-      body.image = result.secure_url;
-      body.publicId_image = result.public_id;
+      body.chapters = JSON.parse(body.chapters || '[]');
+      body.quiz = JSON.parse(body.quiz || '{');
+    } catch (err) {
+      throw new BadRequestException('Parsing Error in body', {
+        cause: err,
+        description:
+          'Invalid JSON format in body, cant parse chapters or quizz',
+      });
     }
-
-    for (let i = 0; i < parseChapters.length; i++) {
-      const file = files.find((f) => f.fieldname === `chapterImage_${i}`);
-      if (file) {
-        const result = await this.CloudinaryService.uploadFile(
-          file,
-          'posts/chapterImages',
-        );
-
-        parseChapters[i].image = result.secure_url;
-        parseChapters[i].publicId_image = result.public_id;
-      }
-    }
-
-    if (body.quiz && typeof body.quiz === 'string') {
-      try {
-        body.quiz = JSON.parse(body.quiz);
-      } catch (err) {
-        throw new BadRequestException({
-          message: 'Invalid quiz data. Expecting JSON object.',
-          error: err,
-        });
-      }
-    }
-    body.chapters = parseChapters;
-    body.quiz = parseQuiz;
 
     return next.handle();
   }
