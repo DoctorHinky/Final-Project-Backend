@@ -17,6 +17,7 @@ import {
   ChapterDto,
   CreateQuizDto,
   PagePostDto,
+  QuizQuestionDto,
   UpdateChapterDto,
   UpdateMainPostDataDto,
 } from './dto';
@@ -53,7 +54,7 @@ export class PostController {
   ) {
     return await this.PostService.getPostByAuthor(role, authorId);
   }
-
+  // hier ist ein fettes problem, wenn keine bilder gegeben sind bricht das system
   @Post('create')
   @RequiredRoles(UserRoles.AUTHOR)
   @UseInterceptors(
@@ -64,8 +65,8 @@ export class PostController {
     PostUploadInterceptor,
   )
   async createPost(
-    @Body() dto: any,
     @UploadedFiles() files: Express.Multer.File[],
+    @Body() dto: any,
     @getCurrentUser('id') userId: string,
   ) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
@@ -91,6 +92,12 @@ export class PostController {
 
   @Patch('addPostImage/:postId')
   @RequiredRoles(UserRoles.AUTHOR, UserRoles.ADMIN, UserRoles.MODERATOR)
+  @UseInterceptors(
+    FileInterceptor('image', {
+      storage: memoryStorage(),
+      limits: { fileSize: 15 * 1024 * 1024 },
+    }),
+  )
   async addPostImage(
     @getCurrentUser() user: { id: string; roles: UserRoles },
     @Param('postId') postId: string,
@@ -164,7 +171,7 @@ export class PostController {
     );
   }
 
-  @Post('addChapterImage/:postId/:chapterId')
+  @Patch('addChapterImage/:postId/:chapterId')
   @RequiredRoles(UserRoles.AUTHOR, UserRoles.ADMIN, UserRoles.MODERATOR)
   @UseInterceptors(
     FileInterceptor('image', {
@@ -204,6 +211,18 @@ export class PostController {
     @Body() dto: CreateQuizDto,
   ) {
     return await this.PostService.addQuiz(userId, postId, dto);
+  }
+
+  // patching quiz will not supported, only adding and delete components in it.
+
+  @Patch('updateQuiz/addQuestion/:quizId')
+  @RequiredRoles(UserRoles.AUTHOR, UserRoles.ADMIN, UserRoles.MODERATOR)
+  async addQuestion(
+    @getCurrentUser() user: { id: string; roles: UserRoles },
+    @Param('quizId') quizId: string,
+    @Body() dto: QuizQuestionDto,
+  ) {
+    return 'await this.PostService.addQuestion(user, quizId, dto);';
   }
 
   // remove pictures from post, chapter

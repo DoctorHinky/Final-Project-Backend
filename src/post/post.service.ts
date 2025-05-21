@@ -220,8 +220,6 @@ export class PostService {
     let main;
     let ChImages;
 
-    console.log('data', data);
-
     const mainImage = files.find((f) => f.fieldname === 'image');
     const chapterImages = files.filter((f) =>
       f.fieldname.startsWith('chapterImage_'),
@@ -272,8 +270,8 @@ export class PostService {
 
     const updatedDTO: CreatePost = {
       ...data,
-      image: main.secure_url,
-      publicId_image: main.public_id,
+      image: main.secure_url ?? null,
+      publicId_image: main.public_id ?? null,
       chapters: data.chapters.map((chapter, i) => ({
         ...chapter,
         image: ChImages[i]?.secure_url ?? null,
@@ -509,10 +507,7 @@ export class PostService {
         data: data,
       });
 
-      return {
-        message: 'Image added to post',
-        data: post,
-      };
+      return 'Image added to post';
     } catch (err) {
       if (err instanceof HttpException) {
         throw err;
@@ -792,6 +787,8 @@ export class PostService {
       }
     }
   }
+
+  // update funktion for quizzes
 
   // DELETE POST
 
