@@ -266,7 +266,7 @@ model Chapter {
 
   // post relation
   postId String @db.Uuid
-  post Post @relation(fields: [postId], references: [id]) // hier wird dann eingetragen zu welchem Post das Kapitel gehört
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade) // hier wird dann eingetragen zu welchem Post das Kapitel gehört
 }
 
 model Post {
@@ -284,11 +284,11 @@ model Post {
   chapters Chapter[]
 
 
-  authorId String @db.Uuid
-  author   User   @relation("UserPosts", fields: [authorId], references: [id])
+  authorId String? @db.Uuid
+  author   User?   @relation("UserPosts", fields: [authorId], references: [id], onDelete: SetNull)
 
   moderatorId String? @db.Uuid
-  moderator   User?   @relation("ModeratorPosts", fields: [moderatorId], references: [id])
+  moderator   User?   @relation("ModeratorPosts", fields: [moderatorId], references: [id], onDelete: SetNull) 
 
   readByUser ReadPost[]
 
@@ -300,13 +300,13 @@ model Post {
   ratings  Rating[]  @relation("PostRatings")
 
   // quiz
-  quiz Quiz? @relation("PostQuiz")
+  quiz Quiz? @relation("PostQuiz") // quizId
 
   // admin meta
   isDeleted     Boolean   @default(false)
   deletedAt     DateTime?
   deletedBy     String?   @db.Uuid // userId
-  deletedByUser User?     @relation("PostDeletedBy", fields: [deletedBy], references: [id]) // userId -> hier wird dann eingetragen wer den Post gelöscht hat
+  deletedByUser User?     @relation("PostDeletedBy", fields: [deletedBy], references: [id], onDelete: SetNull)
   deleteReason  String?
 
   createdAt DateTime @default(now())
@@ -317,7 +317,7 @@ model Post {
 model Quiz {
   id     String @id @default(uuid()) @db.Uuid
   postId String @unique @db.Uuid
-  post   Post   @relation("PostQuiz" ,fields: [postId], references: [id])
+  post   Post   @relation("PostQuiz", fields: [postId], references: [id], onDelete: Cascade)
 
   title   String
 
@@ -331,7 +331,7 @@ model Quiz {
 model QuizQuestion {
   id     String @id @default(uuid()) @db.Uuid
   quizId String @db.Uuid
-  quiz   Quiz   @relation(fields: [quizId], references: [id])
+  quiz   Quiz   @relation(fields: [quizId], references: [id], onDelete: Cascade)
 
   question String // die Frage
 
@@ -346,7 +346,7 @@ model QuizQuestion {
 model QuizAnswer {
   id     String @id @default(uuid()) @db.Uuid
   questionId String @db.Uuid
-  question   QuizQuestion @relation(fields: [questionId], references: [id])
+  question   QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
   answer   String // die Antwort
   isCorrect Boolean @default(false)
@@ -355,6 +355,8 @@ model QuizAnswer {
   updatedAt DateTime @updatedAt
 }
 
+
+// wie genau soll das aussehen?
 model ReadPost {
   id     String @id @default(uuid()) @db.Uuid
   userId String @db.Uuid
@@ -370,31 +372,50 @@ model ReadPost {
 model Comment {
   id     String @id @default(uuid()) @db.Uuid
   postId String @db.Uuid // zu welchem Post gehört der Kommentar
-  post   Post   @relation("PostComments", fields: [postId], references: [id])
+  post   Post   @relation("PostComments", fields: [postId], references: [id], onDelete: Cascade) 
   userId String @db.Uuid // wer den Kommentar geschrieben hat
-  user   User   @relation("UserComments", fields: [userId], references: [id])
+  user   User   @relation("UserComments", fields: [userId], references: [id], onDelete: Cascade) 
 
   content   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   moderatorId String? @db.Uuid // userId
-  moderator   User?   @relation("ModeratorComment", fields: [moderatorId], references: [id])
+  moderator   User?   @relation("ModeratorComment", fields: [moderatorId], references: [id], onDelete: SetNull)
 
   isDeleted     Boolean   @default(false)
   deletedAt     DateTime?
   deletedBy     String?   @db.Uuid // userId
-  deletedByUser User?     @relation("CommentDeletedBy", fields: [deletedBy], references: [id]) // userId -> hier wird dann eingetragen wer den Kommentar gelöscht hat
+  deletedByUser User?     @relation("CommentDeletedBy", fields: [deletedBy], references: [id], onDelete: SetNull) // userId -> hier wird dann eingetragen wer den Kommentar gelöscht hat
   deleteReason  String?
 }
 
-// model muss noch überarbeitet werden
+
+/*
+// zum abrufen der Likes und Dislikes
+const { _count } = await prisma.rating.aggregate({
+  where: { postId: '...' },
+  _count: { Likes: true, Dislikes: true },
+});
+console.log(_count); // { Likes: 1943, Dislikes: 204 }
+
+====================================================
+
+const { _sum } = await prisma.rating.aggregate({
+  where: { postId: '...' },
+  _sum: { Likes: true, Dislikes: true },
+});
+console.log(_sum); // { Likes: 1943, Dislikes: 204 }
+
+*/
+
+
 model Rating {
   id     String @id @default(uuid()) @db.Uuid
   postId String @db.Uuid
-  post   Post   @relation("PostRatings", fields: [postId], references: [id])
-  userId String @db.Uuid
-  user   User   @relation("UserRatings", fields: [userId], references: [id])
+  post   Post   @relation("PostRatings", fields: [postId], references: [id], onDelete: Cascade) 
+  userId String? @db.Uuid
+  user   User?   @relation("UserRatings", fields: [userId], references: [id], onDelete: SetNull)
 
   Likes     Int
   Dislikes  Int
@@ -404,6 +425,10 @@ model Rating {
   isDeleted     Boolean   @default(false)
   deletedAt     DateTime?
   deletedBy     String?   @db.Uuid // userId
-  deletedByUser User?     @relation("RatingDeletedBy", fields: [deletedBy], references: [id]) // userId -> hier wird dann eingetragen wer den Kommentar gelöscht hat
+  deletedByUser User?     @relation("RatingDeletedBy", fields: [deletedBy], references: [id], onDelete: Cascade) // userId -> hier wird dann eingetragen wer den Kommentar gelöscht hat
   deleteReason  String?
+
+  @@unique([postId, userId])
+  @@index([postId])
+  @@index([userId])
 }
