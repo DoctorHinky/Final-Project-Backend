@@ -89,6 +89,42 @@ export class PostController {
     return await this.PostService.updatePost(user, postId, dto, file);
   }
 
+  @Patch('addPostImage/:postId')
+  @RequiredRoles(UserRoles.AUTHOR, UserRoles.ADMIN, UserRoles.MODERATOR)
+  async addPostImage(
+    @getCurrentUser() user: { id: string; roles: UserRoles },
+    @Param('postId') postId: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return await this.PostService.addPostImage(user, postId, file);
+  }
+
+  @Patch('removePostImage/:postId')
+  @RequiredRoles(UserRoles.AUTHOR, UserRoles.ADMIN, UserRoles.MODERATOR)
+  async removePostImage(
+    @getCurrentUser() user: { id: string; roles: UserRoles },
+    @Param('postId') postId: string,
+  ) {
+    return await this.PostService.removePostImage(user, postId);
+  }
+
+  @Patch('publishPost/:postId')
+  @RequiredRoles(UserRoles.AUTHOR)
+  async publishPost(
+    @getCurrentUser('id') userId: string,
+    @Param('postId') postId: string,
+  ) {
+    return await this.PostService.publishPost(userId, postId);
+  }
+
+  @Patch('unpublishPost/:postId')
+  @RequiredRoles(UserRoles.AUTHOR, UserRoles.ADMIN, UserRoles.MODERATOR)
+  async unpublishPost(
+    @getCurrentUser() user: { id: string; roles: UserRoles },
+    @Param('postId') postId: string,
+  ) {
+    return await this.PostService.unpublishPost(user, postId);
+  }
   @Patch('addChapter/:postId')
   @UseInterceptors(
     FileInterceptor('image', {
@@ -128,22 +164,36 @@ export class PostController {
     );
   }
 
-  @Patch('publishPost/:postId')
-  @RequiredRoles(UserRoles.AUTHOR)
-  async publishPost(
-    @getCurrentUser('id') userId: string,
+  @Post('addChapterImage/:postId/:chapterId')
+  @RequiredRoles(UserRoles.AUTHOR, UserRoles.ADMIN, UserRoles.MODERATOR)
+  @UseInterceptors(
+    FileInterceptor('image', {
+      storage: memoryStorage(),
+      limits: { fileSize: 15 * 1024 * 1024 },
+    }),
+  )
+  async addChapterImage(
+    @getCurrentUser() user: { id: string; roles: UserRoles },
+    @UploadedFile() file: Express.Multer.File,
     @Param('postId') postId: string,
+    @Param('chapterId') chapterId: string,
   ) {
-    return await this.PostService.publishPost(userId, postId);
+    return await this.PostService.addChapterImage(
+      user,
+      file,
+      postId,
+      chapterId,
+    );
   }
 
-  @Patch('unpublishPost/:postId')
+  @Patch('removeChapterImage/:postId/:chapterId')
   @RequiredRoles(UserRoles.AUTHOR, UserRoles.ADMIN, UserRoles.MODERATOR)
-  async unpublishPost(
+  async removeChapterImage(
     @getCurrentUser() user: { id: string; roles: UserRoles },
     @Param('postId') postId: string,
+    @Param('chapterId') chapterId: string,
   ) {
-    return await this.PostService.unpublishPost(user, postId);
+    return await this.PostService.removeChapterImage(user, postId, chapterId);
   }
 
   @Patch('addQuiz/:postId')

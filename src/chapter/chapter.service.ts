@@ -43,6 +43,7 @@ export class ChapterService extends BasePrismaService {
       },
     });
   }
+
   async updateChapter(
     chapterId: string,
     data: UpdateChapterDto,
@@ -81,6 +82,48 @@ export class ChapterService extends BasePrismaService {
         description: 'Chapter not found',
       });
     }
+  }
+
+  async addImage(
+    chapterId: string,
+    file: Express.Multer.File,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const prisma = this.getPrisma(tx);
+    const image = await this.CloudinaryService.uploadFile(file);
+
+    const updatedChapter = await prisma.chapter.update({
+      where: { id: chapterId },
+      data: {
+        image: image.secure_url,
+        publicId_image: image.public_id,
+      },
+    });
+    return updatedChapter;
+  }
+
+  async removeImage(chapterId: string, tx?: Prisma.TransactionClient) {
+    const prisma = this.getPrisma(tx);
+    const chapter = await prisma.chapter.findUnique({
+      where: { id: chapterId },
+    });
+
+    if (!chapter) {
+      throw new NotFoundException('Chapter not found');
+    }
+
+    if (chapter.publicId_image) {
+      await this.CloudinaryService.deleteFile(chapter.publicId_image);
+    }
+
+    const updatedChapter = await prisma.chapter.update({
+      where: { id: chapterId },
+      data: {
+        image: null,
+        publicId_image: null,
+      },
+    });
+    return updatedChapter;
   }
 }
 /*
