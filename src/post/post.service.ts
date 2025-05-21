@@ -14,6 +14,7 @@ import {
   CreatePost,
   CreateQuizDto,
   PagePostDto,
+  QuizQuestionDto,
   UpdateChapterDto,
   UpdateMainPostDataDto,
 } from './dto';
@@ -91,7 +92,7 @@ export class PostService {
             title: post.title,
             quickDescription: post.quickDescription,
             image: post.image,
-            author: post.author.username,
+            author: post.author?.username,
             isCertifiedAuthor: post.isCertifiedAuthor,
           };
         }),
@@ -125,6 +126,7 @@ export class PostService {
         include: {
           chapters: {
             select: {
+              id: true,
               title: true,
               content: true,
               image: true,
@@ -132,12 +134,15 @@ export class PostService {
           },
           quiz: {
             select: {
+              id: true,
               title: true,
               questions: {
                 select: {
+                  id: true,
                   question: true,
                   answers: {
                     select: {
+                      id: true,
                       answer: true,
                       isCorrect: true,
                     },
@@ -789,6 +794,126 @@ export class PostService {
   }
 
   // update funktion for quizzes
+  async addQuestion(
+    user: { id: string; roles: UserRoles },
+    postId: string,
+    data: QuizQuestionDto,
+  ) {
+    try {
+      return this.prisma.$transaction(async (tx) => {
+        const post = await tx.post.findUnique({
+          where: { id: postId },
+          include: { quiz: true },
+        });
+
+        if (!post || !post.quiz) {
+          throw new NotFoundException('Post or quiz not found');
+        }
+
+        const isAdmin = user.roles === UserRoles.ADMIN;
+        const isMod = user.roles === UserRoles.MODERATOR;
+        const isAuthor = post.authorId === user.id;
+
+        if (!isAdmin && !isMod && !isAuthor) {
+          throw new ForbiddenException('You are not the author of this post');
+        }
+
+        if ((isAdmin || isMod) && post.authorId === null) {
+          await tx.post.update({
+            where: { id: postId },
+            data: {
+              moderatorId: user.id,
+            },
+          });
+        }
+
+        const quiz = await this.quizService.addQuestion(post.quiz.id, data, tx);
+
+        return {
+          message: 'Question added to quiz',
+          data: quiz,
+        };
+      });
+    } catch (err) {
+      if (err instanceof HttpException) {
+        throw err;
+      }
+
+      throw new BadRequestException('Failed to add question to quiz', {
+        cause: err,
+        description: 'Failed to add question to quiz',
+      });
+    }
+  }
+
+  // wir könnten auch nur mit der questionId arbeiten und nach oben joinen, aber das macht die datenbank nicht mit da wir nur 100MB haben
+
+  async removeQuestion(
+    user: { id: string; roles: UserRoles },
+    postId: string,
+    quizId: string,
+    questionId: string,
+  ) {
+    try {
+      return this.prisma.$transaction(async (tx) => {
+        const post = await tx.post.findUnique({
+          where: { id: postId },
+          include: { quiz: true },
+        });
+
+        if (!post || !post.quiz) {
+          throw new NotFoundException('Post or quiz not found');
+        }
+
+        if (post.quiz.id !== quizId) {
+          throw new NotFoundException(
+            'the requested quiz is not part of this post',
+          );
+        }
+
+        const isAdmin = user.roles === UserRoles.ADMIN;
+        const isMod = user.roles === UserRoles.MODERATOR;
+        const isAuthor = post.authorId === user.id;
+
+        if (!isAdmin && !isMod && !isAuthor) {
+          throw new ForbiddenException('You are not the author of this post');
+        }
+
+        if ((isAdmin || isMod) && post.authorId === null) {
+          await tx.post.update({
+            where: { id: postId },
+            data: {
+              moderatorId: user.id,
+            },
+          });
+        }
+
+        if ((isAdmin || isMod) && post.authorId !== null) {
+          await tx.post.update({
+            where: { id: postId },
+            data: {
+              published: false,
+              publishedAt: null,
+              moderatorId: user.id,
+            },
+          });
+
+          // hier sollte noch die mail an den author geschickt werden, dass der post vom moderator bearbeitet wurde
+        }
+
+        await this.quizService.removeQuestion(questionId, tx);
+      });
+    } catch (err) {
+      if (err instanceof HttpException) {
+        throw err;
+      }
+
+      throw new BadRequestException('Failed to remove question from quiz', {
+        cause: err,
+        description: 'Failed to remove question from quiz',
+      });
+    }
+  }
 
   // DELETE POST
 

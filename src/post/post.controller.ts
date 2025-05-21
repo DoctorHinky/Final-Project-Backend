@@ -215,14 +215,25 @@ export class PostController {
 
   // patching quiz will not supported, only adding and delete components in it.
 
-  @Patch('updateQuiz/addQuestion/:quizId')
+  @Patch('updateQuiz/addQuestion/:postId')
   @RequiredRoles(UserRoles.AUTHOR, UserRoles.ADMIN, UserRoles.MODERATOR)
-  async addQuestion(
+  addQuestion(
     @getCurrentUser() user: { id: string; roles: UserRoles },
-    @Param('quizId') quizId: string,
+    @Param('postId') postId: string,
     @Body() dto: QuizQuestionDto,
   ) {
-    return 'await this.PostService.addQuestion(user, quizId, dto);';
+    return this.PostService.addQuestion(user, postId, dto);
+  }
+
+  @Patch('updateQuiz/removeQuestion/:postId/:quizId/:questionId')
+  @RequiredRoles(UserRoles.AUTHOR, UserRoles.ADMIN, UserRoles.MODERATOR)
+  removeQuestion(
+    @getCurrentUser() user: { id: string; roles: UserRoles },
+    @Param('postId') postId: string,
+    @Param('quizId') quizId: string,
+    @Param('questionId') questionId: string,
+  ) {
+    return this.PostService.removeQuestion(user, postId, quizId, questionId);
   }
 
   // remove pictures from post, chapter
