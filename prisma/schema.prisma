@@ -277,7 +277,8 @@ model Post {
   image             String? // optional | claudinary
   publicId_image    String? // notwendig wenn man löschen will
   tags              String[] // array of strings
-  ageRestriction    Int // notwendig da wir für unterschiedliche Altersgruppen unterschiedliche Inhalte haben
+  forKids           Boolean  @default(false) // wenn für Kinder, dann hier die Altersbeschränkung
+  ageRestriction    Int? // wenn für Kinder, dann hier die Altersbeschränkung
   isCertifiedAuthor Boolean  @default(false) // wir wollten das Pädagogische Authoren Hervorgehoben werden
 
   // Capital Controlling | self-relations
