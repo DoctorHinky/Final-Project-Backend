@@ -77,4 +77,47 @@ export class QuizService extends BasePrismaService {
     await tx.quizQuestion.delete({ where: { id: questionId } });
     return 'Question deleted';
   }
+
+  async addAnswer(
+    questionId: string,
+    data: QuizAnswerDto,
+    tx: PrismaService | Prisma.TransactionClient,
+  ) {
+    const question = await tx.quizQuestion.findUnique({
+      where: { id: questionId },
+    });
+
+    if (!question) throw new NotFoundException('Question not found');
+    const answer = await tx.quizAnswer.create({
+      data: {
+        answer: data.answer,
+        isCorrect: data.isCorrect,
+        questionId: question.id,
+      },
+    });
+    return answer;
+  }
+
+  async removeAnswer(
+    quesitonId: string,
+    answerId: string,
+    tx: PrismaService | Prisma.TransactionClient,
+  ) {
+    const question = await tx.quizQuestion.findUnique({
+      where: { id: quesitonId },
+      include: {
+        answers: true,
+      },
+    });
+
+    if (!question) throw new NotFoundException('Question not found');
+
+    const answer = question.answers.find((answer) => answer.id === answerId);
+    if (!answer) throw new NotFoundException('Answer not found');
+
+    await tx.quizAnswer.delete({
+      where: { id: answerId },
+    });
+    return 'answer succesfully deleted';
+  }
 }

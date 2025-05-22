@@ -14,6 +14,7 @@ import {
   CreatePost,
   CreateQuizDto,
   PagePostDto,
+  QuizAnswerDto,
   QuizQuestionDto,
   UpdateChapterDto,
   UpdateMainPostDataDto,
@@ -911,6 +912,140 @@ export class PostService {
       throw new BadRequestException('Failed to remove question from quiz', {
         cause: err,
         description: 'Failed to remove question from quiz',
+      });
+    }
+  }
+
+  async addAnswer(
+    user: { id: string; roles: UserRoles },
+    postId: string,
+    quizId: string,
+    quesitonId: string,
+    data: QuizAnswerDto,
+  ) {
+    try {
+      return this.prisma.$transaction(async (tx) => {
+        const post = await tx.post.findUnique({
+          where: { id: postId },
+          include: { quiz: true },
+        });
+
+        if (!post || !post.quiz) {
+          throw new NotFoundException('Post or quiz not found');
+        }
+
+        if (post.quiz.id !== quizId) {
+          throw new NotFoundException(
+            'the requested quiz is not part of this post',
+          );
+        }
+
+        const isAdmin = user.roles === UserRoles.ADMIN;
+        const isMod = user.roles === UserRoles.MODERATOR;
+        const isAuthor = post.authorId === user.id;
+        const isOrphaned = post.authorId === null;
+
+        console.log(
+          `ìsAdmin: ${isAdmin} \nisMod: ${isMod} \nisAuthor: ${isAuthor}\nisOrphaned: ${isOrphaned}`,
+        );
+
+        if (!(isAuthor || (isOrphaned && (isAdmin || isMod)))) {
+          throw new ForbiddenException('You are not the author of this post');
+        }
+
+        if (isOrphaned && (isAdmin || isMod)) {
+          await tx.post.update({
+            where: { id: postId },
+            data: {
+              moderatorId: user.id,
+            },
+          });
+        }
+
+        const answer = await this.quizService.addAnswer(quesitonId, data, tx);
+
+        return {
+          message: 'Answer added to question',
+          data: answer,
+        };
+      });
+    } catch (err) {
+      if (err instanceof HttpException) {
+        throw err;
+      }
+      throw new BadRequestException('Failed to add answer to question', {
+        cause: err,
+        description: 'Failed to add answer to question',
+      });
+    }
+  }
+
+  async removeAnswer(
+    user: { id: string; roles: UserRoles },
+    postId: string,
+    quizId: string,
+    questionId: string,
+    answerId: string,
+  ) {
+    try {
+      return this.prisma.$transaction(async (tx) => {
+        const post = await tx.post.findUnique({
+          where: { id: postId },
+          include: { quiz: true },
+        });
+
+        if (!post || !post.quiz) {
+          throw new NotFoundException('Post or quiz not found');
+        }
+
+        if (post.quiz.id !== quizId) {
+          throw new NotFoundException(
+            'the requested quiz is not part of this post',
+          );
+        }
+
+        const isAdmin = user.roles === UserRoles.ADMIN;
+        const isMod = user.roles === UserRoles.MODERATOR;
+        const isAuthor = post.authorId === user.id;
+        const isOrphaned = post.authorId === null;
+
+        console.log(
+          `ìsAdmin: ${isAdmin} \nisMod: ${isMod} \nisAuthor: ${isAuthor}\nisOrphaned: ${isOrphaned}`,
+        );
+
+        if (!isAuthor && !isAdmin && !isMod) {
+          throw new ForbiddenException('You are not the author of this post');
+        }
+
+        if (isAdmin || isMod) {
+          const data = {
+            moderatorId: user.id,
+          };
+
+          if (isOrphaned) {
+            data['published'] = false;
+            data['publishedAt'] = null;
+
+            // hier sollte noch die mail an den author geschickt werden, dass der post vom moderator bearbeitet wurde
+          }
+
+          await tx.post.update({
+            where: { id: postId },
+            data,
+          });
+        }
+
+        await this.quizService.removeAnswer(questionId, answerId, tx);
+
+        return 'Answer removed from question';
+      });
+    } catch (err) {
+      if (err instanceof HttpException) {
+        throw err;
+      }
+      throw new BadRequestException('Failed to remove answer from question', {
+        cause: err,
+        description: 'Failed to remove answer from question',
       });
     }
   }

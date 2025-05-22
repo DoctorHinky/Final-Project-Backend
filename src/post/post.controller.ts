@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -17,6 +18,7 @@ import {
   ChapterDto,
   CreateQuizDto,
   PagePostDto,
+  QuizAnswerDto,
   QuizQuestionDto,
   UpdateChapterDto,
   UpdateMainPostDataDto,
@@ -225,7 +227,7 @@ export class PostController {
     return this.PostService.addQuestion(user, postId, dto);
   }
 
-  @Patch('updateQuiz/removeQuestion/:postId/:quizId/:questionId')
+  @Delete('updateQuiz/removeQuestion/:postId/:quizId/:questionId')
   @RequiredRoles(UserRoles.AUTHOR, UserRoles.ADMIN, UserRoles.MODERATOR)
   removeQuestion(
     @getCurrentUser() user: { id: string; roles: UserRoles },
@@ -234,6 +236,36 @@ export class PostController {
     @Param('questionId') questionId: string,
   ) {
     return this.PostService.removeQuestion(user, postId, quizId, questionId);
+  }
+
+  @Patch('updateQuestion/addAnswer/:postId/:quizId/:questionId')
+  @RequiredRoles(UserRoles.AUTHOR, UserRoles.ADMIN, UserRoles.MODERATOR)
+  addAnswer(
+    @getCurrentUser() user: { id: string; roles: UserRoles },
+    @Param('postId') postId: string,
+    @Param('quizId') quizId: string,
+    @Param('questionId') questionId: string,
+    @Body() dto: QuizAnswerDto,
+  ) {
+    return this.PostService.addAnswer(user, postId, quizId, questionId, dto);
+  }
+
+  @Delete('updateQuestion/removeAnswer/:postId/:quizId/:questionId/:answerId')
+  @RequiredRoles(UserRoles.AUTHOR, UserRoles.ADMIN, UserRoles.MODERATOR)
+  removeAnswer(
+    @getCurrentUser() user: { id: string; roles: UserRoles },
+    @Param('postId') postId: string,
+    @Param('quizId') quizId: string,
+    @Param('questionId') questionId: string,
+    @Param('answerId') answerId: string,
+  ) {
+    return this.PostService.removeAnswer(
+      user,
+      postId,
+      quizId,
+      questionId,
+      answerId,
+    );
   }
 
   // remove pictures from post, chapter
