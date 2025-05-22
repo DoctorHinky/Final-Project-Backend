@@ -27,6 +27,7 @@ import { getCurrentUser } from 'src/common/decorators';
 import { PostService } from './post.service';
 import { RequiredRoles } from 'src/common/decorators/roles.decorator';
 import { UserRoles } from '@prisma/client';
+import { DeleteReasonDto } from './dto/delete-reason.dto';
 
 @Controller('article')
 export class PostController {
@@ -266,6 +267,33 @@ export class PostController {
       questionId,
       answerId,
     );
+  }
+
+  // DELETE LOGIC FOR POSTS
+
+  @Patch('deletePost/:postId')
+  @RequiredRoles(UserRoles.AUTHOR, UserRoles.ADMIN, UserRoles.MODERATOR)
+  async deletePost(
+    @getCurrentUser() user: { id: string; roles: UserRoles },
+    @Param('postId') postId: string,
+    @Body() dto: DeleteReasonDto,
+  ) {
+    return await this.PostService.deletePost(user, postId, dto);
+  }
+
+  @Patch('restorePost/:postId')
+  @RequiredRoles(UserRoles.ADMIN, UserRoles.MODERATOR)
+  async restorePost(@Param('postId') postId: string) {
+    return await this.PostService.restorePost(postId);
+  }
+
+  @Delete('removePost/:postId')
+  @RequiredRoles(UserRoles.ADMIN, UserRoles.MODERATOR)
+  async removePost(
+    @getCurrentUser('roles') role: UserRoles,
+    @Param('postId') postId: string,
+  ) {
+    return await this.PostService.removePost(postId, role);
   }
 
   // remove pictures from post, chapter

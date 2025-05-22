@@ -24,6 +24,7 @@ import { QuizService } from 'src/quiz/quiz.service';
 import { calcAge } from 'src/common/helper/dates.helper';
 import { Post, UserRoles } from '@prisma/client';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+import { DeleteReasonDto } from './dto/delete-reason.dto';
 
 @Injectable()
 export class PostService {
@@ -794,6 +795,10 @@ export class PostService {
     }
   }
 
+  /**
+   * update function could implemented as the same way like delete function, only question by question, and answer by answer
+   */
+
   // update funktion for quizzes
   async addQuestion(
     user: { id: string; roles: UserRoles },
@@ -1052,18 +1057,120 @@ export class PostService {
 
   // DELETE POST
 
-  deletePost() {
-    // hier wird der Post gelöscht (soft delete)
-    return 'deletePost';
+  deletePost(
+    user: { id: string; roles: UserRoles },
+    postId: string,
+    dto: DeleteReasonDto,
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      const post = await tx.post.findUnique({
+        where: { id: postId },
+      });
+
+      if (!post) throw new NotFoundException('Post not found');
+      if (post.isDeleted) {
+        throw new BadRequestException('Post is already deleted');
+      }
+
+      const isAdmin = user.roles === UserRoles.ADMIN;
+      const isMod = user.roles === UserRoles.MODERATOR;
+      const isAuthor = post.authorId === user.id;
+
+      if (!isAdmin && !isMod && !isAuthor) {
+        throw new ForbiddenException(
+          'You are not authorized to delete this post',
+        );
+      }
+
+      if ((isAdmin || isMod) && post.authorId) {
+        await tx.user.update({
+          where: { id: post.authorId },
+          data: {
+            moderatedAt: new Date(),
+            moderatedBy: user.id,
+          },
+        });
+      }
+
+      await tx.post.update({
+        where: { id: postId },
+        data: {
+          published: false,
+          publishedAt: null,
+          isDeleted: true,
+          deletedAt: new Date(),
+          deletedBy: user.id,
+          deleteReason: dto.reason || 'no reason provided',
+        },
+      });
+      return 'Post deleted, to restore it, please contact our support';
+    });
   }
 
-  restorePost() {
-    // hier wird der Post wiederhergestellt
-    return 'restorePost';
+  async restorePost(postId: string) {
+    try {
+      return this.prisma.$transaction(async (tx) => {
+        const post = await tx.post.findUnique({
+          where: { id: postId },
+          select: {
+            id: true,
+            isDeleted: true,
+          },
+        });
+
+        if (!post) throw new NotFoundException('Post not found');
+
+        if (!post.isDeleted) {
+          throw new BadRequestException('Post is not deleted');
+        }
+
+        await tx.post.update({
+          where: { id: postId },
+          data: {
+            published: false,
+            publishedAt: null,
+            isDeleted: false,
+            deletedAt: null,
+            deletedBy: null,
+            deleteReason: null,
+          },
+        });
+        return {
+          message: 'Post restored',
+        };
+      });
+    } catch (err) {
+      if (err instanceof HttpException) {
+        throw err;
+      }
+      throw new BadRequestException('Failed to restore post', {
+        cause: err,
+        description: 'Failed to restore post',
+      });
+    }
   }
 
-  removePost() {
-    // hier wird der Post entfernt
-    return 'removePost';
+  // role is optional, because the main usage for this function will be for cron jobs
+  removePost(postId: string, role?: UserRoles) {
+    return this.prisma.$transaction(async (tx) => {
+      const post = await tx.post.findUnique({
+        where: { id: postId },
+        include: { quiz: true, chapters: true },
+      });
+
+      if (!post) throw new NotFoundException('Post not found');
+
+      if (role && role !== UserRoles.ADMIN) {
+        throw new ForbiddenException(
+          'You are not authorized to delete this post',
+        );
+      }
+      // we dont need to delete the quiz and chapters, because they will be deleted by the post cascade
+      await tx.post.delete({
+        where: { id: postId },
+      });
+
+      return 'Post deleted';
+    });
   }
 }
