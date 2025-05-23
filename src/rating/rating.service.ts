@@ -94,7 +94,6 @@ export class RatingService {
 
     return results.map((r) => ({
       postId: r.postId,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       rating: r._sum.value,
     }));
   }

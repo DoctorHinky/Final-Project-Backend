@@ -411,6 +411,7 @@ model Comment {
   post   Post   @relation("PostComments", fields: [postId], references: [id], onDelete: Cascade)
   userId String @db.Uuid // wer den Kommentar geschrieben hat
   user   User   @relation("UserComments", fields: [userId], references: [id], onDelete: Cascade)
+  thanksCount Int @default(0) // wie oft geliked
 
   content   String
   createdAt DateTime @default(now())
