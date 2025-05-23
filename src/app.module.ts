@@ -12,6 +12,7 @@ import { TicketModule } from './ticket/ticket.module';
 import { PostModule } from './post/post.module';
 import { ChapterModule } from './chapter/chapter.module';
 import { QuizModule } from './quiz/quiz.module';
+import { RatingModule } from './rating/rating.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { QuizModule } from './quiz/quiz.module';
     PostModule,
     ChapterModule,
     QuizModule,
+    RatingModule,
   ],
   providers: [
     { provide: 'APP_GUARD', useClass: AtGuard },
