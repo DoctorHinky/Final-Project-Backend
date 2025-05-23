@@ -22,7 +22,7 @@ export class RatingService {
         if (exitingLike.value === value) {
           await tx.post.update({
             where: { id: postId },
-            data: { pupularityScore: { decrement: 1 } },
+            data: { popularityScore: { decrement: 1 } },
           });
           return tx.rating.delete({
             where: {
@@ -35,7 +35,7 @@ export class RatingService {
         const diff = value - exitingLike.value;
         await tx.post.update({
           where: { id: postId },
-          data: { pupularityScore: { increment: diff } },
+          data: { popularityScore: { increment: diff } },
         });
 
         // wenn eine andere Bewertung gegeben wird, dann aktualisieren
@@ -48,7 +48,7 @@ export class RatingService {
       // new rating
       await tx.post.update({
         where: { id: postId },
-        data: { pupularityScore: { increment: 1 } },
+        data: { popularityScore: { increment: 1 } },
       });
 
       return tx.rating.create({
