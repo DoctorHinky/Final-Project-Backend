@@ -278,7 +278,7 @@ model Post {
   publicId_image    String? // notwendig wenn man löschen will
   tags              String[] // array of strings
   forKids           Boolean  @default(false) // wenn für Kinder, dann hier die Altersbeschränkung
-  ageRestriction    Int? // wenn für Kinder, dann hier die Altersbeschränkung
+  ageRestriction    Int @default(18) // wenn für Kinder, dann hier die Altersbeschränkung
   isCertifiedAuthor Boolean  @default(false) // wir wollten das Pädagogische Authoren Hervorgehoben werden
 
   // Capital Controlling | self-relations

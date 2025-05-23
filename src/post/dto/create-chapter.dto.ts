@@ -18,9 +18,9 @@ export class ChapterDto {
 
   @IsOptional()
   @IsUrl()
-  image: string;
+  image: string | null;
 
   @IsOptional()
   @IsString()
-  publicId_image: string;
+  publicId_image: string | null;
 }

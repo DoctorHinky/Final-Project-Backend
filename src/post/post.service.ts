@@ -22,9 +22,10 @@ import {
 import { ChapterService } from 'src/chapter/chapter.service';
 import { QuizService } from 'src/quiz/quiz.service';
 import { calcAge } from 'src/common/helper/dates.helper';
-import { Post, UserRoles } from '@prisma/client';
+import { Post, Prisma, UserRoles } from '@prisma/client';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { DeleteReasonDto } from './dto/delete-reason.dto';
+import { UploadApiResponse } from 'cloudinary';
 
 @Injectable()
 export class PostService {
@@ -51,7 +52,7 @@ export class PostService {
       }
       const age = calcAge(user.birthdate);
 
-      const whereClause = {
+      const whereClause: Prisma.PostWhereInput = {
         OR: [{ published: true }, { published: false, authorId: userId }],
         ageRestriction: { lte: age },
       };
@@ -224,8 +225,8 @@ export class PostService {
     data: CreatePost,
     files: Express.Multer.File[],
   ) {
-    let main;
-    let ChImages;
+    let main: UploadApiResponse | null = null;
+    let ChImages: (UploadApiResponse | null)[] = [];
 
     const mainImage = files.find((f) => f.fieldname === 'image');
     const chapterImages = files.filter((f) =>
@@ -234,7 +235,7 @@ export class PostService {
     if (mainImage) {
       main = await this.cloudinaryService.uploadFile(mainImage, 'posts/main');
 
-      if (!main || !main.secure_url) {
+      if (!main?.secure_url) {
         throw new BadRequestException('failed to upload main image');
       }
     }
@@ -264,21 +265,45 @@ export class PostService {
       ChImages = [];
     }
 
-    const certificated: { isPedagogicalAuthor: boolean } | null =
-      await this.prisma.user.findUnique({
-        where: { id: userId },
-        select: { isPedagogicalAuthor: true },
-      });
+    const certificated = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { isPedagogicalAuthor: true },
+    });
 
-    if (!certificated || certificated.isPedagogicalAuthor === undefined) {
-      console.log('certificated', certificated);
+    if (!certificated) {
       throw new BadRequestException('User not found');
+    }
+
+    // fro kids normaliesieren
+    let kidsflag: boolean;
+
+    if (typeof data.forKids === 'boolean') {
+      kidsflag = data.forKids;
+    } else if (typeof data.forKids === 'string') {
+      if (data.forKids === 'true') {
+        kidsflag = true;
+      } else if (data.forKids === 'false') {
+        kidsflag = false;
+      } else {
+        throw new BadRequestException(
+          'invalid value for forKids, has to be true or false',
+        );
+      }
+    } else {
+      kidsflag = false;
+    }
+
+    if (kidsflag === true && !data.ageRestriction) {
+      throw new BadRequestException(
+        'To mark this post as kid-friendly, you must provide ageRestriction',
+      );
     }
 
     const updatedDTO: CreatePost = {
       ...data,
-      image: main.secure_url ?? null,
-      publicId_image: main.public_id ?? null,
+      image: main?.secure_url ?? null,
+      publicId_image: main?.public_id ?? null,
+      forKids: kidsflag,
       chapters: data.chapters.map((chapter, i) => ({
         ...chapter,
         image: ChImages[i]?.secure_url ?? null,
@@ -294,6 +319,7 @@ export class PostService {
           image: updatedDTO.image ?? null,
           publicId_image: updatedDTO.publicId_image ?? null,
           tags: updatedDTO.tags,
+          forKids: updatedDTO.forKids,
           ageRestriction: updatedDTO.ageRestriction,
           authorId: userId,
           isCertifiedAuthor: certificated?.isPedagogicalAuthor ?? false,
@@ -313,9 +339,9 @@ export class PostService {
       );
 
       if (data.quiz && Object.keys(data.quiz).length > 0) {
-        console.log('quiz erkannt', data.quiz);
         await this.quizService.createQuiz(newPost.id, updatedDTO.quiz, tx);
       }
+      console.log('newPost', newPost);
       return { message: 'Post created', postId: newPost.id };
     });
   }
@@ -329,7 +355,13 @@ export class PostService {
   ) {
     const post = await this.prisma.post.findUnique({
       where: { id: postId },
-      select: { publicId_image: true, authorId: true, published: true },
+      select: {
+        publicId_image: true,
+        authorId: true,
+        published: true,
+        forKids: true,
+        ageRestriction: true,
+      },
     });
 
     if (!post) {
@@ -351,6 +383,42 @@ export class PostService {
       data.publicId_image = image.public_id;
     }
     let updateData: any = { ...data };
+
+    let forKidsFlag: boolean | undefined;
+
+    if (typeof data.forKids === 'string') {
+      if (data.forKids === 'true') {
+        forKidsFlag = true;
+      } else if (data.forKids === 'false') {
+        forKidsFlag = false;
+      } else {
+        throw new BadRequestException(
+          'invalid value for forKids, has to be true or false',
+        );
+      }
+    } else if (typeof data.forKids === 'boolean') {
+      forKidsFlag = data.forKids;
+    }
+
+    // Validierung bei Kind-Beiträgen
+    if (forKidsFlag === true) {
+      const ageRestriction = data.ageRestriction ?? post.ageRestriction;
+
+      if (ageRestriction === undefined || ageRestriction === null) {
+        throw new BadRequestException(
+          'To mark this post as kid-friendly, you must provide ageRestriction',
+        );
+      }
+
+      if (ageRestriction < 0 || ageRestriction > 18) {
+        throw new BadRequestException(
+          'ageRestriction must be between 0 and 18 for kid posts',
+        );
+      }
+    }
+
+    // merge final in updateData
+    if (forKidsFlag !== undefined) updateData.forKids = forKidsFlag;
 
     if (post.authorId !== user.id) {
       if (

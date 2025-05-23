@@ -27,6 +27,8 @@ export class PostUploadInterceptor implements NestInterceptor {
 
       body.chapters = JSON.parse(body.chapters || '[]');
       body.quiz = JSON.parse(body.quiz || '{}');
+
+      console.log('parsed body', body);
     } catch (err) {
       throw new BadRequestException('Parsing Error in body', {
         cause: err,

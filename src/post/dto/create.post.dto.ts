@@ -25,16 +25,21 @@ export class CreatePost {
   @IsOptional()
   @IsString()
   @IsUrl()
-  image: string;
+  image: string | null;
 
   @IsOptional()
   @IsString()
-  publicId_image: string;
+  publicId_image: string | null;
 
+  @IsOptional()
+  @Type(() => Number)
   @IsInt()
   @Min(0)
   @Max(18)
   ageRestriction: number;
+
+  @IsOptional()
+  forKids?: any;
 
   @IsArray()
   @IsString({ each: true })

@@ -20,15 +20,15 @@ export class UpdateMainPostDataDto {
   @IsOptional()
   @IsString()
   @Length(5, 500)
-  qiuickDescription?: string;
+  quickDescription?: string;
 
   @IsOptional()
   @IsUrl()
-  image?: string;
+  image?: string | null;
 
   @IsOptional()
   @IsString()
-  publicId_image?: string;
+  publicId_image?: string | null;
 
   @IsOptional()
   @Type(() => Number)
@@ -36,6 +36,9 @@ export class UpdateMainPostDataDto {
   @Min(0)
   @Max(18)
   ageRestriction?: number;
+
+  @IsOptional()
+  forKids?: any;
 
   @IsOptional()
   @Type(() => Array)
