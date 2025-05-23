@@ -15,5 +15,6 @@ import { RatingModule } from 'src/rating/rating.module';
     CloudinaryModule,
     forwardRef(() => RatingModule),
   ],
+  exports: [PostService],
 })
 export class PostModule {}
