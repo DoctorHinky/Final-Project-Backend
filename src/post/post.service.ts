@@ -172,14 +172,44 @@ export class PostService {
   }
 
   getPostByFilter() {
-    // zum beispiel suchen nach einem Namen oder einer Kategorie
+    // wir erstellen die Filter logik wenn wir alles erstellt haben was wir wie ratings oder comments
     return 'getPostByFilter';
   }
 
-  getPostForUser() {
-    // hier sollten alterbeschränkungen vom System verwendet werden, später dann der Algorithmus, welcher Vorschläge macht
+  async getPostForUser(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
 
-    return 'getPostForUser';
+    if (!user) throw new BadRequestException('no user founded');
+
+    let query: Prisma.PostWhereInput = {
+      published: true,
+    };
+
+    const userAge = calcAge(user.birthdate);
+
+    if (userAge < 18) {
+      query = {
+        ...query,
+        ageRestriction: { lte: userAge },
+      };
+    }
+
+    const posts = await this.prisma.post.findMany({
+      where: query,
+      include: {
+        chapters: true,
+        quiz: true,
+      },
+    });
+
+    // hier sollte dann noch der Readfilter ausgelesen werden
+
+    return {
+      message: 'Posts found',
+      data: posts,
+    };
   }
 
   async getPostByAuthor(role: UserRoles, authorId: string) {

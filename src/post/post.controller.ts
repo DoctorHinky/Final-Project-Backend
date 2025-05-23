@@ -41,6 +41,11 @@ export class PostController {
     return this.PostService.getPostPreviews(userId, query);
   }
 
+  @Get('getPostForUser')
+  async getPostForUser(@getCurrentUser('id') userId: string) {
+    return this.PostService.getPostForUser(userId);
+  }
+
   @Get('getPostById/:postId')
   async getPostById(
     @getCurrentUser('id') userId: string,

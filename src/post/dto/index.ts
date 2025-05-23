@@ -6,3 +6,4 @@ export * from './create-quiz-answer.dto';
 export * from './page.post.dto';
 export * from './update.post.dto';
 export * from './update-chapter.dto';
+export * from './post-filter.dto';
