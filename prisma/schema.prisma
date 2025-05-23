@@ -271,7 +271,7 @@ model Post {
   id                String   @id @default(uuid()) @db.Uuid
   title             String
   quickDescription  String // das wird dann in der Übersicht gezeigt, und beim Klick wird der Post geladen, das entlastet die Datenbank
-  // content           String? // wir bruauchen hier kein content, da wir die Kapitel haben und auch wenn es nur ein Kapitel gibt wird der content in diesem gespeichert
+
   image             String? // optional | claudinary
   publicId_image    String? // notwendig wenn man löschen will
   tags              String[] // array of strings
@@ -367,20 +367,21 @@ model ReadPost {
   @@unique([userId, postId]) // unique constraint to avoid duplicates
 }
 
-/**
- * // zum abrufen der Likes und Dislikes
- * const { _count } = await prisma.rating.aggregate({
- * where: { postId: '...' },
- * _count: { Likes: true, Dislikes: true },
- * });
- * console.log(_count); // { Likes: 1943, Dislikes: 204 }
- * ====================================================
- * const { _sum } = await prisma.rating.aggregate({
- * where: { postId: '...' },
- * _sum: { Likes: true, Dislikes: true },
- * });
- * console.log(_sum); // { Likes: 1943, Dislikes: 204 }
- */
+// Example: Get count of Likes and Dislikes for a post
+// const likes = await prisma.rating.count({
+//   where: { postId: '...' , value: 1 },
+// });
+// const dislikes = await prisma.rating.count({
+//   where: { postId: '...' , value: -1 },
+// });
+// console.log({ Likes: likes, Dislikes: dislikes }); // { Likes: 1943, Dislikes: 204 }
+
+// Example: Get sum of Likes and Dislikes for a post (if you store values differently)
+// const { _sum } = await prisma.rating.aggregate({
+//   where: { postId: '...' },
+//   _sum: { value: true },
+// });
+// console.log(_sum); // { value: ... }
 
 model Rating {
   id     String  @id @default(uuid()) @db.Uuid
