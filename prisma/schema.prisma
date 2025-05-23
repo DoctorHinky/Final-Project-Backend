@@ -418,8 +418,7 @@ model Rating {
   userId String? @db.Uuid
   user   User?   @relation("UserRatings", fields: [userId], references: [id], onDelete: SetNull)
 
-  Likes     Int
-  Dislikes  Int
+  value Int // 1 = like, -1 = dislike
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -429,7 +428,7 @@ model Rating {
   deletedByUser User?     @relation("RatingDeletedBy", fields: [deletedBy], references: [id], onDelete: Cascade) // userId -> hier wird dann eingetragen wer den Kommentar gelöscht hat
   deleteReason  String?
 
-  @@unique([postId, userId])
+  @@unique([postId, userId]) // jeder user kann nur einmal bewerten
   @@index([postId])
   @@index([userId])
 }
