@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PostService } from 'src/post/post.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 
@@ -11,15 +15,25 @@ export class RatingService {
 
   setRating(userId: string, postId: string, value: number) {
     return this.prisma.$transaction(async (tx) => {
-      const exitingLike = await tx.rating.findUnique({
+      const post = await this.prisma.post.findUnique({
+        where: { id: postId },
+        select: { authorId: true },
+      });
+
+      if (!post) throw new NotFoundException('Post not found');
+      if (post.authorId === userId) {
+        throw new ForbiddenException('You cannot rate your own post');
+      }
+
+      const exitingRating = await tx.rating.findUnique({
         where: {
           postId_userId: { postId, userId },
         },
       });
 
-      if (exitingLike) {
+      if (exitingRating) {
         // wenn die gleiche Bewertung erneut gegeben wird, dann löschen (toggle)
-        if (exitingLike.value === value) {
+        if (exitingRating.value === value) {
           await tx.post.update({
             where: { id: postId },
             data: { popularityScore: { decrement: 1 } },
@@ -32,7 +46,7 @@ export class RatingService {
         }
 
         // Bewertung ändern (-1 + -1 = 0, 1 - -1 = 2, 1 - 1 = 0, 1 - 0 = 1, -1 - 0 = -1, 0 - 1 = -1)
-        const diff = value - exitingLike.value;
+        const diff = value - exitingRating.value;
         await tx.post.update({
           where: { id: postId },
           data: { popularityScore: { increment: diff } },
