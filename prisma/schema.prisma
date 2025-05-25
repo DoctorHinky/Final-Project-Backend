@@ -63,8 +63,6 @@ model User {
 
   // Articles, Posts (written / moderated)
   moderatedPosts    Post[]    @relation("ModeratorPosts") // wenn ein Moderator einen Post moderiert
-  moderatedComments Comment[] @relation("ModeratorComment") // wenn ein Moderator einen Kommentar moderiert
-
   // Admin Meta
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -422,15 +420,15 @@ model Comment {
   parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
   replies  Comment[] @relation("CommentReplies")
 
-  moderatorId String? @db.Uuid // userId
-  moderator   User?   @relation("ModeratorComment", fields: [moderatorId], references: [id], onDelete: SetNull)
-
   isDeleted     Boolean         @default(false)
   deletedAt     DateTime?
   deletedBy     String?         @db.Uuid // userId
   deletedByUser User?           @relation("CommentDeletedBy", fields: [deletedBy], references: [id], onDelete: SetNull) // userId -> hier wird dann eingetragen wer den Kommentar gelöscht hat
   deleteReason  String?
   CommentRating CommentRating[]
+
+  @@index([postId]) // index for faster queries
+  @@index([deletedAt])
 }
 
 model CommentRating {

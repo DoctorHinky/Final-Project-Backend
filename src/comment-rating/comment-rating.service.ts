@@ -86,7 +86,6 @@ export class CommentRatingService {
 
       return {
         message,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         thanksCount: updated?.thanksCount ?? 0,
       };
     });
