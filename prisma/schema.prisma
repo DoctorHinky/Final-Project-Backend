@@ -192,9 +192,10 @@ model FriendRequest {
 
 enum FriendRequestStatus {
   PENDING // Anfrage gesendet
-  ACCEPTED // Anfrage angenommen
   REJECTED // Anfrage abgelehnt
   BLOCKED // Anfrage blockiert
+  // ACCEPTED // unnötig, da Freundschaftsrelationen bereits die Akzeptanz abbilden
+  CANCELED // Anfrage abgebrochen
 }
 
 // ticket kann man im Support erstellen, und dann wird es noch eine meldefunktion geben, als Report

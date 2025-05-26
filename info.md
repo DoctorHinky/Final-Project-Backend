@@ -33,16 +33,16 @@
 
 ### _Artikel oder Post_
 
-- [ ] getAllPosts -M ?
-- [ ] getPostById | getPostByName (ist okay wenn mehrere)
-- [ ] createPost
-- [ ] updatePost
-- [ ] removePost -U \* sollte auch für Autor gehen
-- [ ] deletePost -M
-- [ ] getAllPostsByUserId -M
-- [ ] getAllPostsByCategory
-- [ ] getAllPostsByTag
-- [ ] getPopularPosts
+- [x] getAllPosts -M ?
+- [x] getPostById | getPostByName (ist okay wenn mehrere)
+- [x] createPost
+- [x] updatePost
+- [x] removePost -U \* sollte auch für Autor gehen
+- [x] deletePost -M
+- [x] getAllPostsByUserId -M
+- [x] getAllPostsByCategory
+- [x] getAllPostsByTag
+- [x] getPopularPosts
 - [ ] getAllReadPostOfUser
 
 ---
@@ -59,23 +59,22 @@
 
 ### _Kommentare_
 
-- [ ] getAllComments
-  - byUser -M
-  - byPost (filter sollten optional sein einsetzbar sind)
-- [ ] getCommentById ? unnötig - M
-- [ ] createComment
-- [ ] updateComment
-- [ ] removeComment - U \* sollte auch für Autor gehen
-- [ ] deleteComment - M
+- [x] getAllComments
+  - [x] byUser -M
+  - [x] byPost (filter sollten optional sein einsetzbar sind)
+- [x] getCommentById ? unnötig - M
+- [x] createComment
+- [x] updateComment
+- [x] removeComment - U \* sollte auch für Autor gehen
+- [x] deleteComment - M
 
 ---
 
 ### _Rating_
 
-- [ ] addLike \* toggle mit add und remove
-- [ ] addDislike \* toggle mit add und remove
-- [ ] getRatingByPostId
-- [ ] getRatingByUserId -M
+- [x] addLike \* toggle mit add und remove
+- [x] addDislike \* toggle mit add und remove
+- [x] getRatingByPostId
 
 ---
 
