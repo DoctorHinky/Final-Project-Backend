@@ -1,0 +1,245 @@
+<!-- src/mail/templates/default.hbs -->
+
+<html>
+  <head>
+    <meta charset='UTF-8' />
+    <title>{{subject}}</title>
+    <style>
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu,
+          Cantarell, sans-serif;
+        background: linear-gradient(135deg, #0f2419 0%, #163a27 100%);
+        padding: 40px 20px;
+        color: #ffffff;
+        margin: 0;
+        min-height: 100vh;
+      }
+
+      .container {
+        max-width: 600px;
+        margin: auto;
+        background: #1d4a32;
+        border-radius: 16px;
+        box-shadow:
+          0 20px 40px rgba(0, 0, 0, 0.25),
+          0 0 0 1px rgba(199, 233, 214, 0.2);
+        overflow: hidden;
+        position: relative;
+      }
+
+      .container::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(
+          90deg,
+          #4ad295 0%,
+          #35ccd0 33%,
+          #9be15d 66%,
+          #ffd460 100%
+        );
+      }
+
+      .header {
+        text-align: center;
+        padding: 40px 30px 30px;
+        background: linear-gradient(
+          135deg,
+          rgba(74, 210, 149, 0.1) 0%,
+          rgba(53, 204, 208, 0.1) 100%
+        );
+        border-bottom: 1px solid rgba(199, 233, 214, 0.2);
+      }
+
+      .header img {
+        max-height: 60px;
+        margin-bottom: 20px;
+        filter: drop-shadow(0 4px 8px rgba(74, 210, 149, 0.4));
+      }
+
+      .header h2 {
+        color: #ffffff;
+        font-size: 28px;
+        font-weight: 600;
+        margin: 0;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+        letter-spacing: -0.5px;
+      }
+
+      .content {
+        padding: 40px 30px;
+        color: #c7e9d6;
+        line-height: 1.7;
+        font-size: 16px;
+      }
+
+      .content h1,
+      .content h2,
+      .content h3,
+      .content h4,
+      .content h5,
+      .content h6 {
+        color: #ffffff;
+        margin-top: 30px;
+        margin-bottom: 15px;
+        font-weight: 600;
+      }
+
+      .content h1 {
+        font-size: 24px;
+      }
+      .content h2 {
+        font-size: 22px;
+      }
+      .content h3 {
+        font-size: 20px;
+      }
+
+      .content p {
+        margin-bottom: 20px;
+      }
+
+      .content a {
+        color: #4ad295;
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.2s ease;
+      }
+
+      .content a:hover {
+        color: #35ccd0;
+        text-shadow: 0 0 8px rgba(74, 210, 149, 0.4);
+      }
+
+      .content .button {
+        display: inline-block;
+        background: linear-gradient(135deg, #4ad295 0%, #35ccd0 100%);
+        color: #0f2419 !important;
+        padding: 14px 28px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        margin: 20px 0;
+        box-shadow: 0 4px 12px rgba(74, 210, 149, 0.4);
+        transition: all 0.2s ease;
+      }
+
+      .content .button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(74, 210, 149, 0.4);
+        color: #0f2419 !important;
+      }
+
+      .content .highlight {
+        background: rgba(74, 210, 149, 0.1);
+        border-left: 4px solid #4ad295;
+        padding: 20px;
+        margin: 25px 0;
+        border-radius: 0 8px 8px 0;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .content .warning {
+        background: rgba(255, 212, 96, 0.1);
+        border-left: 4px solid #ffd460;
+        padding: 20px;
+        margin: 25px 0;
+        border-radius: 0 8px 8px 0;
+        color: #ffd460;
+      }
+
+      .content .success {
+        background: rgba(155, 225, 93, 0.1);
+        border-left: 4px solid #9be15d;
+        padding: 20px;
+        margin: 25px 0;
+        border-radius: 0 8px 8px 0;
+        color: #9be15d;
+      }
+
+      .footer {
+        padding: 30px;
+        text-align: center;
+        background: #163a27;
+        border-top: 1px solid rgba(199, 233, 214, 0.2);
+        color: #8fd3b5;
+        font-size: 14px;
+      }
+
+      .footer p {
+        margin: 8px 0;
+      }
+
+      .footer a {
+        color: #4ad295;
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.2s ease;
+      }
+
+      .footer a:hover {
+        color: #35ccd0;
+      }
+
+      .divider {
+        height: 1px;
+        background: linear-gradient(
+          90deg,
+          transparent 0%,
+          rgba(199, 233, 214, 0.3) 50%,
+          transparent 100%
+        );
+        margin: 30px 0;
+      }
+
+      /* Responsive Design */
+      @media (max-width: 640px) {
+        body {
+          padding: 20px 10px;
+        }
+
+        .container {
+          margin: 0;
+        }
+
+        .header,
+        .content,
+        .footer {
+          padding-left: 20px;
+          padding-right: 20px;
+        }
+
+        .header h2 {
+          font-size: 24px;
+        }
+
+        .content {
+          font-size: 15px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class='container'>
+      <div class='header'>
+        <img src='{{logoUrl}}' alt='Logo' />
+        <h2>{{subject}}</h2>
+      </div>
+
+      <div class='content'>
+        {{{content}}}
+        <!-- unescaped HTML -->
+      </div>
+
+      <div class='footer'>
+        <p>© {{year}} Deine Plattform. Alle Rechte vorbehalten.</p>
+        <p><a href='{{termsLink}}'>Nutzungsbedingungen</a></p>
+      </div>
+    </div>
+  </body>
+</html>
+{{! End of src/mail/templates/default.hbs }}

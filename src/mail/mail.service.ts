@@ -5,7 +5,7 @@ import { compileTemplate } from './mail.helper';
 @Injectable()
 export class MailService {
   constructor() {
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
+    sgMail.setApiKey(process.env.SEND_GRID_API!);
   }
 
   async sendMail(
@@ -17,11 +17,11 @@ export class MailService {
     const html = compileTemplate('default', {
       subject,
       content: rawHtml,
-      logoUrl: 'https://deine-domain.de/assets/logo.png', // <- hier dein Logo
-      termsLink: 'https://deine-domain.de/nutzungsbedingungen', // Public Link
+      logoUrl:
+        'https://res.cloudinary.com/dk1b3zsum/image/upload/v1748296667/learn_to_grow_logo_kn9vpq.jpg', // <- hier dein Logo
+      /* termsLink: 'https://deine-domain.de/nutzungsbedingungen', // Public Link */
       year: new Date().getFullYear(),
     });
-
     const msg = {
       to,
       from: from || process.env.SYSTEM_EMAIL!,
@@ -31,12 +31,12 @@ export class MailService {
 
     try {
       await sgMail.send(msg);
-    } catch (err) {
-      console.error('Error sending email:', err);
-      throw new BadRequestException('Failed to send email', {
-        cause: err,
-        description: 'There was an error while trying to send the email.',
-      });
+    } catch (error) {
+      console.error('Full error object:', JSON.stringify(error, null, 2));
+      throw new BadRequestException(
+        'Failed to send email',
+        'There was an error while trying to send the email.',
+      );
     }
   }
 

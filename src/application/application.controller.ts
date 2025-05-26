@@ -1,6 +1,8 @@
 import {
   Body,
   Controller,
+  Get,
+  Param,
   Post,
   UploadedFiles,
   UseInterceptors,
@@ -35,6 +37,66 @@ export class ApplicationController {
     @Body() body: CreateApplicationDto,
   ) {
     console.log('body', body);
+    console.log('files object:', files);
+
+    // Korrigierte Logs - mit return statement oder direkte Ausgabe
+    console.log(
+      'resumes:',
+      files.resume?.map((file) => ({
+        originalname: file.originalname,
+        mimetype: file.mimetype,
+        fieldname: file.fieldname,
+        hasBuffer: !!file.buffer,
+        bufferLength: file.buffer?.length,
+      })),
+    );
+
+    console.log(
+      'certification:',
+      files.certification?.map((file) => ({
+        originalname: file.originalname,
+        mimetype: file.mimetype,
+        fieldname: file.fieldname,
+        hasBuffer: !!file.buffer,
+        bufferLength: file.buffer?.length,
+      })),
+    );
+
+    console.log(
+      'coverLetter:',
+      files.coverLetter?.map((file) => ({
+        originalname: file.originalname,
+        mimetype: file.mimetype,
+        fieldname: file.fieldname,
+        hasBuffer: !!file.buffer,
+        bufferLength: file.buffer?.length,
+      })),
+    );
+
+    console.log(
+      'other:',
+      files.other?.map((file) => ({
+        originalname: file.originalname,
+        mimetype: file.mimetype,
+        fieldname: file.fieldname,
+        hasBuffer: !!file.buffer,
+        bufferLength: file.buffer?.length,
+      })),
+    );
+
     return this.applicationService.sendApplication(userId, body, files);
+  }
+
+  @Get('cancelApplication/:requestId')
+  async cancelApplication(
+    @getCurrentUser('id') userId: string,
+    @Param('requestId') requestId: string,
+  ) {
+    return this.applicationService.cancelApplication(userId, requestId);
+  }
+
+  @Get('cleanUp')
+  async cleanUp() {
+    return this.applicationService.cleanupApplications();
   }
 }

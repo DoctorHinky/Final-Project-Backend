@@ -13,12 +13,15 @@ import {
   ApplicationStatus,
   UserRoles,
 } from '@prisma/client';
+import { MailService } from 'src/mail/mail.service';
+import { limitConcurrency } from 'src/common/utilitys/promise-limiter';
 
 @Injectable()
 export class ApplicationService {
   constructor(
     private prisma: PrismaService,
     private cloudinary: CloudinaryService,
+    private readonly mailService: MailService,
   ) {}
 
   async sendApplication(
@@ -71,11 +74,20 @@ export class ApplicationService {
         other: ApplicationDocType.OTHER,
       };
 
+      let documentsUploaded = 0;
+
       for (const [category, fileArray] of Object.entries(files)) {
-        if (!fileArray || fileArray.length === 0) continue;
+        if (!fileArray || fileArray.length === 0) {
+          console.log(`No files for category: ${category}`);
+          continue;
+        }
 
         for (const file of fileArray) {
           if (!file || !file.buffer) {
+            console.error(
+              `Invalid file or missing buffer for ${category}:`,
+              file,
+            );
             throw new BadRequestException(
               `Invalid file or missing buffer property for ${category}.`,
             );
@@ -94,18 +106,34 @@ export class ApplicationService {
               type: applicationDocTypeMap[category] || ApplicationDocType.OTHER,
             },
           });
+          documentsUploaded++;
         }
       }
+
+      // mail sending!
+      await this.mailService.sendMail(
+        application.email,
+        `Your application has been received`,
+        `<p>Thank you for your application. We will review it shortly.</p>`,
+      );
+
       return {
         message: 'Application sent successfully',
         applicationId: applicationContent.id,
+        documentsUploaded,
       };
     } catch (err) {
+      console.error('Error in sendApplication:', err);
+
       if (err instanceof HttpException) {
         throw err;
       } else {
         throw new BadRequestException(
           'An error occurred while processing the application. Please try again later.',
+          {
+            cause: err,
+            description: 'Error while sending application',
+          },
         );
       }
     }
@@ -351,13 +379,61 @@ export class ApplicationService {
     }
   }
 
+  async cancelApplication(userId: string, applicationId: string) {
+    try {
+      const application = await this.prisma.application.findUnique({
+        where: { id: applicationId },
+      });
+
+      if (!application) {
+        throw new NotFoundException('Application not found');
+      }
+
+      if (application.userId !== userId) {
+        throw new ForbiddenException(
+          'You can only cancel your own applications.',
+        );
+      }
+
+      if (
+        application.status !== ApplicationStatus.PENDING &&
+        application.status !== ApplicationStatus.IN_PROGRESS
+      ) {
+        throw new BadRequestException(
+          'application cannot be canceled, it is not in a state that can be canceled.',
+        );
+      }
+
+      const updatedApplication = await this.prisma.application.update({
+        where: { id: applicationId },
+        data: {
+          status: ApplicationStatus.CANCELED,
+        },
+      });
+
+      return {
+        message: 'Application canceled successfully',
+        data: updatedApplication,
+      };
+    } catch (err) {
+      if (err instanceof HttpException) {
+        throw err;
+      } else {
+        throw new BadRequestException(
+          'An error occurred while canceling the application. Please try again later.',
+        );
+      }
+    }
+  }
+
   async cleanupApplications() {
     const now = new Date();
-    const halfYear = 6 * 30 * 24 * 60 * 60 * 1000;
-    const oneWeek = 7 * 24 * 60 * 60 * 1000;
+    // const halfYear = 6 * 30 * 24 * 60 * 60 * 1000;
+    // const oneWeek = 7 * 24 * 60 * 60 * 1000;
+    const halfYear = 1000; // Für Testumgebung
+    const oneWeek = 1000;
 
     let deletions = 0;
-
     const queries = [
       {
         label: 'REJECTED',
@@ -373,7 +449,7 @@ export class ApplicationService {
         condition: {
           status: ApplicationStatus.CANCELED,
           updatedAt: {
-            lt: new Date(now.getTime() - oneWeek), // 1 Woche
+            lt: new Date(now.getTime() - oneWeek),
           },
         },
       },
@@ -385,7 +461,6 @@ export class ApplicationService {
       },
     ];
 
-    // loop over queries to handle different conditions
     for (const query of queries) {
       const applications = await this.prisma.application.findMany({
         where: query.condition,
@@ -396,34 +471,48 @@ export class ApplicationService {
 
       if (applications.length === 0) continue;
 
-      // preparing for parallel deletion
-      const deletionTasks = applications.map(async (application) => {
-        // delete documents if they exist from Cloudinary
-        if (application.referenceDocument?.length > 0) {
-          const docDeletions = application.referenceDocument
-            .filter((doc) => doc.publicId)
-            .map((doc) =>
-              this.cloudinary.deleteFile(doc.publicId).catch((err) => {
-                console.error(
-                  `Failed to delete document ${doc.publicId}:`,
-                  err,
-                );
-              }),
-            );
+      const deletionTasks = applications.map((application) => async () => {
+        try {
+          // Cloudinary-Dateien löschen (außerhalb der Transaction)
+          if (application.referenceDocument?.length > 0) {
+            const docDeletions = application.referenceDocument
+              .filter((doc) => doc.publicId)
+              .map((doc) =>
+                this.cloudinary
+                  .deleteFile(doc.publicId)
+                  .catch((err) =>
+                    console.error(
+                      `Failed to delete document ${doc.publicId}:`,
+                      err,
+                    ),
+                  ),
+              );
+            await Promise.all(docDeletions);
+          }
 
-          await Promise.all(docDeletions); // parallel deletion of documents
+          // Datenbank-Löschung in einer Transaction
+          await this.prisma.$transaction(async (tx) => {
+            // Erst ApplicationDocuments löschen
+            await tx.applicationDocument.deleteMany({
+              where: {
+                applicationId: application.id,
+              },
+            });
+
+            // Dann Application löschen
+            await tx.application.delete({
+              where: { id: application.id },
+            });
+          });
+
+          deletions++;
+          console.log(`Successfully deleted application ${application.id}`);
+        } catch (err) {
+          console.error(`Error deleting application ${application.id}:`, err);
         }
-
-        // delete application from the database
-        await this.prisma.application.delete({
-          where: { id: application.id },
-        });
-
-        deletions++;
       });
-
-      // finish all deletion tasks in simultaneous
-      await Promise.all(deletionTasks);
+      // nessesary to limit concurrency to avoid overwhelming the database
+      await limitConcurrency(5, deletionTasks);
     }
 
     return {
