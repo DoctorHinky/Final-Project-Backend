@@ -30,7 +30,7 @@ model User {
   bio                 String? // optional
 
   // UserFile relation - fixed one-to-one relation
-  userFile   UserFile? @relation("UserToFile", fields: [userFileId], references: [id])
+  userFile   UserFile? @relation("UserToFile", fields: [userFileId], references: [id], onDelete: Cascade)
   userFileId String?   @unique @db.Uuid
 
   // Relations
@@ -73,7 +73,7 @@ model User {
   isDeleted     Boolean   @default(false)
   deletedAt     DateTime?
   deletedBy     String?   @db.Uuid // userId -> hier wird dann eingetragen wer den User gelöscht hat
-  deletedByUser User?     @relation("UserDeletedBy", fields: [deletedBy], references: [id]) // userId -> hier wird dann eingetragen welcher moderator den User gelöscht hat
+  deletedByUser User?     @relation("UserDeletedBy", fields: [deletedBy], references: [id], onDelete: SetNull) // userId -> hier wird dann eingetragen welcher moderator den User gelöscht hat
   deleteReason  String?
   deactivated   Boolean   @default(false)
 
@@ -128,28 +128,30 @@ enum UserRoles {
 
 model Application {
   id     String @id @default(uuid()) @db.Uuid
-  userId String @db.Uuid
-  user   User   @relation("Applications", fields: [userId], references: [id])
+  userId String? @db.Uuid
+  user   User?   @relation("Applications", fields: [userId], references: [id], onDelete: SetNull)
 
-  modId String @db.Uuid
-  mod   User   @relation("ApplicationMod", fields: [modId], references: [id])
+  modId String? @db.Uuid
+  mod   User?   @relation("ApplicationMod", fields: [modId], references: [id], onDelete: SetNull)
 
   status  ApplicationStatus @default(PENDING)
   phone   String // Telefonnummer -> für Rückfragen
+  email   String // E-Mail-Adresse -> für Rückfragen
   content String // freier Text,
 
   referenceDocument ApplicationDocument[] // hier werden die Referenzdokumente gespeichert
   createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
 }
 
 model ApplicationDocument {
   id            String      @id @default(uuid()) @db.Uuid
   applicationId String      @db.Uuid
-  application   Application @relation(fields: [applicationId], references: [id])
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
 
   url        String // die Cloudinary-URL
   publicId   String // die Cloudinary-Public-ID → wichtig zum Löschen!
-  type       String // z.B. "screenshot", "logfile", optional
+  type       ApplicationDocType @default(OTHER)
   uploadedAt DateTime @default(now())
 }
 
@@ -161,14 +163,21 @@ enum ApplicationStatus {
   CANCELED // abgebrochen
 }
 
+enum ApplicationDocType {
+  RESUME
+  COVER_LETTER
+  CERTIFICATION
+  OTHER
+}
+
 model Friendship {
   id String @id @default(uuid()) @db.Uuid
 
   initiatorId String @db.Uuid
   receiverId  String @db.Uuid
 
-  initiator User @relation("Initiator", fields: [initiatorId], references: [id]) // userId -> hier wird dann eingetragen wer die Anfrage gesendet hat
-  receiver  User @relation("Receiver", fields: [receiverId], references: [id]) // userId -> hier wird dann eingetragen wer die Anfrage empfangen hat
+  initiator User @relation("Initiator", fields: [initiatorId], references: [id], onDelete: Cascade) // userId -> hier wird dann eingetragen wer die Anfrage gesendet hat
+  receiver  User @relation("Receiver", fields: [receiverId], references: [id], onDelete: Cascade) // userId -> hier wird dann eingetragen wer die Anfrage empfangen hat
 
   createdAt DateTime @default(now())
 
@@ -180,8 +189,8 @@ model FriendRequest {
   senderId   String @db.Uuid // userId -> hier wird dann eingetragen wer die Anfrage gesendet hat
   receiverId String @db.Uuid // userId -> hier wird dann eingetragen wer die Anfrage empfangen hat
 
-  sender   User @relation("SendRequests", fields: [senderId], references: [id])
-  receiver User @relation("ReceivedRequest", fields: [receiverId], references: [id])
+  sender   User @relation("SendRequests", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("ReceivedRequest", fields: [receiverId], references: [id], onDelete: Cascade)
 
   status      FriendRequestStatus @default(PENDING)
   createdAt   DateTime            @default(now())
@@ -203,7 +212,7 @@ model Ticket {
   id String @id @default(uuid()) @db.Uuid
 
   userFileId String   @db.Uuid // die id der Userakte
-  userFile   UserFile @relation("UserFile", fields: [userFileId], references: [id])
+  userFile   UserFile @relation("UserFile", fields: [userFileId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -216,7 +225,7 @@ model Ticket {
 
   // moderatoren
   workedById String? @db.Uuid
-  workedBy   User?   @relation("WorkedByUser", fields: [workedById], references: [id])
+  workedBy   User?   @relation("WorkedByUser", fields: [workedById], references: [id], onDelete: SetNull)
 
   // messages
   messages TicketMessage[]
@@ -234,9 +243,9 @@ model TicketMessage {
 
   // ticket relation
   ticketId String @db.Uuid
-  ticket   Ticket @relation(fields: [ticketId], references: [id])
+  ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 }
-
+// cloudinary files for tickets -> cleanup muss per funktio erfolgen
 model TicketFile {
   id       String @id @default(uuid()) @db.Uuid
   ticket   Ticket @relation(fields: [ticketId], references: [id])
@@ -357,10 +366,10 @@ model QuizAnswer {
 model ReadPost {
   id     String @id @default(uuid()) @db.Uuid
   userId String @db.Uuid
-  user   User   @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   postId String   @db.Uuid
-  post   Post     @relation(fields: [postId], references: [id])
+  post   Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
   readAt DateTime @default(now())
 
   @@unique([userId, postId]) // unique constraint to avoid duplicates

@@ -96,14 +96,14 @@
 
 ### _Freunde_
 
-- [ ] getAllFriends
-- [ ] getFriendById ?
-- [ ] addFriend
-- [ ] removeFriend
-- [ ] sendFriendRequest
-- [ ] cancelFriendRequest
-- [ ] acceptFriendRequest
-- [ ] rejectFriendRequest
+- [x] getAllFriends
+- [x] getFriendById ?
+- [x] addFriend
+- [x] removeFriend
+- [x] sendFriendRequest
+- [x] cancelFriendRequest
+- [x] acceptFriendRequest
+- [x] rejectFriendRequest
 
 ? eigentes Modul?
 
