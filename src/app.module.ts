@@ -17,6 +17,7 @@ import { CommentModule } from './comment/comment.module';
 import { CommentRatingModule } from './comment-rating/comment-rating.module';
 import { FriendModule } from './friend/friend.module';
 import { ApplicationModule } from './application/application.module';
+import { MailModule } from './mail/mail.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { ApplicationModule } from './application/application.module';
     CommentRatingModule,
     FriendModule,
     ApplicationModule,
+    MailModule,
   ],
   providers: [
     { provide: 'APP_GUARD', useClass: AtGuard },
