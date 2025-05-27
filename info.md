@@ -80,17 +80,17 @@
 
 ### _Applications_
 
-- [ ] sendApplication -U
-- [ ] cancelApplication -U
+- [x] sendApplication -U
+- [x] cancelApplication -U
 - [ ] getAllApplications -M
 - [ ] getApplicationById -M ? unnötig kein UseCase
 - [ ] getApplicationByUserId -M
-- [ ] blockUserForApplication -M
-- [ ] unblockUserForApplication -M
+- [x] blockUserForApplication -M
+- [x] unblockUserForApplication -M
 
-- [ ] takeApplication -M -> damit ändert sich der Status auf in_progress
-- [ ] acceptApplication -M -> hier kann dann eine automatische Email an den User gesendet werden
-- [ ] rejectApplication -M -> hier kann dann eine automatische Email an den User gesendet werden
+- [x] takeApplication -M -> damit ändert sich der Status auf in_progress
+- [x] acceptApplication -M -> hier kann dann eine automatische Email an den User gesendet werden
+- [x] rejectApplication -M -> hier kann dann eine automatische Email an den User gesendet werden
 
 ---
 

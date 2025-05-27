@@ -1,0 +1,75 @@
+export interface BaseEmailData {
+  [key: string]: any;
+}
+
+// specific E-Mail-Data for conditional templates
+export interface ApplicationAcceptedData extends BaseEmailData {
+  firstname: string;
+  lastname: string;
+  termsOfUseUrl: string;
+  termsAndConditionsUrl: string;
+}
+
+export interface ApplicationRejectedData extends BaseEmailData {
+  firstname: string;
+  reason: string;
+}
+
+export interface BlockingFromApplicationData extends BaseEmailData {
+  firstname: string;
+  reason: string;
+}
+
+export interface WelcomeEmailData extends BaseEmailData {
+  firstname: string;
+  verificationLink: string;
+  loginUrl: string;
+}
+
+export interface PasswordResetData extends BaseEmailData {
+  firstname: string;
+  resetLink: string;
+  expirationTime: string;
+}
+
+// Template-Konfiguration
+export interface EmailTemplateConfig {
+  templateName: string;
+  subject: string;
+}
+
+// predefined Email Templates
+export const EMAIL_TEMPLATES = {
+  APPLICATION_ACCEPTED: {
+    templateName: 'application-accepted',
+    subject: 'Welcome to the Author Community',
+  },
+  APPLICATION_REJECTED: {
+    templateName: 'application-rejected',
+    subject: 'Your Application Has Been Rejected',
+  },
+  BLOCKING_USER: {
+    templateName: 'application-blocked',
+    subject: 'Your Account Has Been Blocked from Applications',
+  },
+  UNBLOCKING_USER: {
+    templateName: 'application-unblocked',
+    subject: 'Your Account Has Been Unblocked from Applications',
+  },
+  WELCOME: {
+    templateName: 'welcome',
+    subject: 'Welcome to LearnToGrow',
+  },
+  PASSWORD_RESET: {
+    templateName: 'password-reset',
+    subject: 'Reset Your Password',
+  },
+} as const;
+
+// Union Type für alle möglichen E-Mail-Daten
+export type EmailData =
+  | ApplicationAcceptedData
+  | ApplicationRejectedData
+  | BlockingFromApplicationData
+  | WelcomeEmailData
+  | PasswordResetData;

@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import * as sgMail from '@sendgrid/mail';
 import { compileTemplate } from './mail.helper';
+import { EMAIL_TEMPLATES, BaseEmailData } from './email.types';
 
 @Injectable()
 export class MailService {
@@ -19,7 +20,7 @@ export class MailService {
       content: rawHtml,
       logoUrl:
         'https://res.cloudinary.com/dk1b3zsum/image/upload/v1748296667/learn_to_grow_logo_kn9vpq.jpg', // <- hier dein Logo
-      /* termsLink: 'https://deine-domain.de/nutzungsbedingungen', // Public Link */
+      termsLink: 'https://deine-domain.de/nutzungsbedingungen', // Public Link
       year: new Date().getFullYear(),
     });
     const msg = {
@@ -38,6 +39,87 @@ export class MailService {
         'There was an error while trying to send the email.',
       );
     }
+  }
+
+  // Neue generische Methode für Template-basierte E-Mails
+  async sendTemplatedEmail<T extends BaseEmailData>(
+    to: string,
+    templateKey: keyof typeof EMAIL_TEMPLATES,
+    data: T,
+    from?: string,
+  ): Promise<void> {
+    const config = EMAIL_TEMPLATES[templateKey];
+
+    // Kompiliere das spezifische Template
+    const contentHtml = compileTemplate(config.templateName, data);
+
+    // Wrppe es in das Standard-Layout
+    const html = compileTemplate('default', {
+      subject: config.subject,
+      content: contentHtml,
+      logoUrl:
+        'https://res.cloudinary.com/dk1b3zsum/image/upload/v1748296667/learn_to_grow_logo_kn9vpq.jpg',
+      termsLink: process.env.TERMS_OF_USE_URL || '#',
+      year: new Date().getFullYear(),
+    });
+
+    const msg = {
+      to,
+      from: from || process.env.SYSTEM_EMAIL!,
+      subject: config.subject,
+      html,
+    };
+
+    try {
+      await sgMail.send(msg);
+    } catch (error) {
+      console.error('Full error object:', JSON.stringify(error, null, 2));
+      throw new BadRequestException(
+        'Failed to send email',
+        'There was an error while trying to send the email.',
+      );
+    }
+  }
+
+  // Spezifische Methoden für bessere Developer Experience
+  async sendApplicationAcceptedEmail(
+    to: string,
+    data: { firstname: string; lastname: string },
+    from?: string,
+  ): Promise<void> {
+    return this.sendTemplatedEmail(
+      to,
+      'APPLICATION_ACCEPTED',
+      {
+        ...data,
+        termsOfUseUrl: process.env.TERMS_OF_USE_URL || '#',
+      },
+      from,
+    );
+  }
+
+  async sendApplicationRejectedEmail(
+    to: string,
+    data: { firstname: string; reason: string },
+    from?: string,
+  ): Promise<void> {
+    return this.sendTemplatedEmail(to, 'APPLICATION_REJECTED', data, from);
+  }
+
+  async sendBlockingFromApplicationEmail(
+    to: string,
+    data: { firstname: string; reason: string },
+    from?: string,
+  ): Promise<void> {
+    return this.sendTemplatedEmail(to, 'BLOCKING_USER', data, from);
+  }
+
+  async sendUnblockingFromApplicationEmail(
+    to: string,
+    data: { firstname: string },
+    from?: string,
+  ): Promise<void> {
+    return this.sendTemplatedEmail(to, 'UNBLOCKING_USER', data, from);
   }
 
   async sendNewsletter(

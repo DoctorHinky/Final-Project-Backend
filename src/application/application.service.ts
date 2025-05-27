@@ -1,3 +1,8 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import {
   BadRequestException,
   ForbiddenException,
@@ -6,7 +11,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { CreateApplicationDto } from './dto';
+import { CreateApplicationDto, RejectionDto } from './dto';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import {
   ApplicationDocType,
@@ -42,6 +47,7 @@ export class ApplicationService {
 
       if (!user) throw new NotFoundException('User not found');
 
+      // only normal users can apply to become an author
       if (user.role === UserRoles.ADMIN || user.role === UserRoles.MODERATOR) {
         throw new ForbiddenException(
           'Admins and moderators cannot send applications. Please use a different account.',
@@ -51,7 +57,7 @@ export class ApplicationService {
           'You are already an author. You cannot send applications.',
         );
       }
-
+      // if someone sendet to many applications, we block them, also if they are haters or something against our rules
       if (user?.blockedForApplication) {
         throw new ForbiddenException(
           'Application cancelled, you are blocked from sending applications.',
@@ -140,7 +146,13 @@ export class ApplicationService {
   }
 
   async getApplications(
-    query: 'ALL' | 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'IN_PROGRESS' = 'ALL',
+    query:
+      | 'ALL'
+      | 'PENDING'
+      | 'CANCELED'
+      | 'ACCEPTED'
+      | 'REJECTED'
+      | 'IN_PROGRESS' = 'ALL',
   ) {
     try {
       let status: ApplicationStatus | undefined;
@@ -160,6 +172,9 @@ export class ApplicationService {
           break;
         case 'IN_PROGRESS':
           status = ApplicationStatus.IN_PROGRESS;
+          break;
+        case 'CANCELED':
+          status = ApplicationStatus.CANCELED;
           break;
         default:
           status = undefined;
@@ -201,7 +216,7 @@ export class ApplicationService {
     }
   }
 
-  async seeMyApplication(userId: string) {
+  async applicationsByUser(userId: string) {
     try {
       const applications = await this.prisma.application.findMany({
         where: { userId },
@@ -273,7 +288,10 @@ export class ApplicationService {
     }
   }
 
-  async acceptApplication(userId: string, applicationId: string) {
+  async acceptApplication(
+    userId: string,
+    applicationId: string,
+  ): Promise<{ message: string; data: any }> {
     try {
       const application = await this.prisma.application.findUnique({
         where: { id: applicationId },
@@ -305,6 +323,12 @@ export class ApplicationService {
         );
       }
 
+      if (application.modId !== userId) {
+        throw new ForbiddenException(
+          "You can't accept this application, someone else is working on it.",
+        );
+      }
+
       const updatedApplication = await this.prisma.application.update({
         where: { id: applicationId },
         data: {
@@ -319,38 +343,13 @@ export class ApplicationService {
       });
 
       if (otherApplications.length > 0) {
-        const deletionTasks = otherApplications.map(async (otherApp) => {
-          try {
-            // delete documents if they exist from Cloudinary
-            if (otherApp.referenceDocument?.length > 0) {
-              const docDeletions = otherApp.referenceDocument
-                .filter((doc) => doc.publicId)
-                .map((doc) =>
-                  this.cloudinary.deleteFile(doc.publicId).catch((err) => {
-                    console.error(
-                      `Fehler beim Löschen von Dokument ${doc.publicId} (Application ${otherApp.id}):`,
-                      err,
-                    );
-                  }),
-                );
+        // mapping of promises to delete other applications
+        const deletionTasks = otherApplications.map(
+          (otherApp) => () => this.deleteApplicationWithDocuments(otherApp), // Funktion die Promise zurückgibt
+        );
 
-              await Promise.all(docDeletions);
-            }
-
-            // delete the application
-            await this.prisma.application.delete({
-              where: { id: otherApp.id },
-            });
-          } catch (error) {
-            console.error(
-              `Error while deleting application with following id: ${otherApp.id}:`,
-              error,
-            );
-          }
-        });
-
-        // parallel deletion of other applications
-        await Promise.all(deletionTasks);
+        // Parallel deletion mit limitierter Concurrency
+        await limitConcurrency(5, deletionTasks);
       }
 
       await this.prisma.user.update({
@@ -361,8 +360,39 @@ export class ApplicationService {
           authorizedAt: new Date(),
         },
       });
+      console.log(
+        'name: ',
+        application.user!.firstname,
+        application.user!.lastname,
+      );
 
       // hier muss dann die mail versedent werden
+      console.log(process.env.TERMS_OF_USE_URL);
+
+      /* await this.mailService.sendMail(
+        application.email,
+        `Welcome to the Author Community`,
+        `<p>Dear ${application.user!.firstname} ${application.user!.lastname},</p>
+      
+        <p>We are pleased to inform you that your application to join our Author Community has been accepted. Congratulations and welcome aboard!</p>
+      
+        <p>We're excited to see your contributions and look forward to your unique perspective enriching our platform. Your voice matters here.</p>
+      
+        <p><strong>Please note:</strong><br>
+        By publishing your first article, you agree to our platform's <a href="${process.env.TERMS_OF_USE_URL}">Terms of Use</a>. These terms grant us the right to moderate content to ensure it aligns with our community standards and legal guidelines.</p>
+      
+        <p>We do not tolerate illegal, harmful, or inappropriate content. For full details on what is permitted and how moderation is handled, please refer to our <a href="[LINK_ZU_DEN_BEDINGUNGEN]">Terms and Conditions</a>.</p>
+      
+        <p>If you have any questions or need assistance, feel free to reach out to our support team at any time.</p>
+      
+        <p>Best regards,<br>
+        Your LearnToGrow Team</p>`,
+      ); */
+
+      await this.mailService.sendApplicationAcceptedEmail(application.email, {
+        firstname: application.user!.firstname,
+        lastname: application.user!.lastname,
+      });
 
       return {
         message: 'Application accepted successfully',
@@ -374,6 +404,95 @@ export class ApplicationService {
       } else {
         throw new BadRequestException(
           'An error occurred while accepting the application. Please try again later.',
+        );
+      }
+    }
+  }
+
+  // Hilfsmethode für die Löschung einer Application mit ihren Dokumenten
+  private async deleteApplicationWithDocuments(
+    application: any,
+  ): Promise<void> {
+    try {
+      // Delete documents if they exist from Cloudinary
+      if (application.referenceDocument?.length > 0) {
+        const docDeletions = application.referenceDocument
+          .filter((doc) => doc.publicId)
+          .map((doc) =>
+            this.cloudinary.deleteFile(doc.publicId).catch((err) => {
+              console.error(
+                `Fehler beim Löschen von Dokument ${doc.publicId} (Application ${application.id}):`,
+                err,
+              );
+            }),
+          );
+
+        await Promise.all(docDeletions);
+      }
+
+      // Delete the application
+      await this.prisma.application.delete({
+        where: { id: application.id },
+      });
+    } catch (error) {
+      console.error(
+        `Error while deleting application with following id: ${application.id}:`,
+        error,
+      );
+    }
+  }
+
+  async rejectApplication(
+    userId: string,
+    applicationId: string,
+    dto: RejectionDto,
+  ) {
+    try {
+      const application = await this.prisma.application.findUnique({
+        where: { id: applicationId },
+        include: { user: true },
+      });
+
+      if (!application) {
+        throw new NotFoundException('Application not found');
+      }
+
+      if (application.status !== ApplicationStatus.IN_PROGRESS) {
+        throw new BadRequestException(
+          'Application is not in a state that can be rejected.',
+        );
+      }
+
+      if (application.modId !== userId) {
+        throw new ForbiddenException(
+          "You can't reject this application, someone else is working on it.",
+        );
+      }
+
+      const updatedApplication = await this.prisma.application.update({
+        where: { id: applicationId },
+        data: {
+          status: ApplicationStatus.REJECTED,
+          modId: userId,
+        },
+      });
+
+      // Send rejection email
+      await this.mailService.sendApplicationRejectedEmail(application.email, {
+        firstname: application.user!.firstname,
+        reason: dto.reason,
+      });
+      return {
+        message: 'Application rejected successfully',
+        data: updatedApplication,
+      };
+    } catch (err) {
+      console.error('Error in rejectApplication:', err);
+      if (err instanceof HttpException) {
+        throw err;
+      } else {
+        throw new BadRequestException(
+          'An error occurred while rejecting the application. Please try again later.',
         );
       }
     }
@@ -421,6 +540,106 @@ export class ApplicationService {
       } else {
         throw new BadRequestException(
           'An error occurred while canceling the application. Please try again later.',
+        );
+      }
+    }
+  }
+
+  async blockUserFromApplication(
+    userId: string,
+    targetId: string,
+    reason: string,
+  ) {
+    try {
+      const target = await this.prisma.user.findUnique({
+        where: { id: targetId },
+      });
+
+      if (!target) {
+        throw new NotFoundException('Target user not found');
+      }
+
+      if (target.blockedForApplication) {
+        throw new BadRequestException(
+          'User is already blocked from sending applications.',
+        );
+      }
+
+      await this.prisma.user.update({
+        where: { id: targetId },
+        data: {
+          blockedForApplication: true,
+          moderatedBy: userId,
+          moderatedAt: new Date(),
+        },
+      });
+
+      const firstname = target.firstname || 'User';
+
+      await this.mailService.sendBlockingFromApplicationEmail(target.email, {
+        firstname,
+        reason,
+      });
+
+      return {
+        message: 'User has been blocked from sending applications',
+        data: {
+          id: target.id,
+          firstname: target.firstname,
+          lastname: target.lastname,
+          email: target.email,
+        },
+      };
+    } catch (err) {
+      console.error('Error in blockUserFromApplication:', err);
+      if (err instanceof HttpException) {
+        throw err;
+      } else {
+        throw new BadRequestException(
+          'An error occurred while blocking the user from sending applications. Please try again later.',
+        );
+      }
+    }
+  }
+
+  async unblockUserFromApplication(userId: string) {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      if (!user.blockedForApplication) {
+        throw new BadRequestException(
+          'User is not blocked from sending applications.',
+        );
+      }
+
+      const updatedUser = await this.prisma.user.update({
+        where: { id: userId },
+        data: { blockedForApplication: false },
+      });
+
+      await this.mailService.sendUnblockingFromApplicationEmail(
+        updatedUser.email,
+        {
+          firstname: updatedUser.firstname || 'User',
+        },
+      );
+
+      return {
+        message: 'User has been unblocked from sending applications',
+        data: updatedUser,
+      };
+    } catch (err) {
+      if (err instanceof HttpException) {
+        throw err;
+      } else {
+        throw new BadRequestException(
+          'An error occurred while unblocking the user. Please try again later.',
         );
       }
     }
