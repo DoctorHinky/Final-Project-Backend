@@ -1,0 +1,1 @@
+- [ ] checken des posts creators

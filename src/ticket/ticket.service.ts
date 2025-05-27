@@ -395,7 +395,7 @@ export class TicketService {
 
       await this.prisma.ticket.deleteMany({});
 
-      await this.prisma.readPost.deleteMany({});
+      await this.prisma.history.deleteMany({});
       await this.prisma.rating.deleteMany({});
       await this.prisma.comment.deleteMany({});
       await this.prisma.post.deleteMany({});

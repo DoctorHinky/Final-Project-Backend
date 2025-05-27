@@ -1,4 +1,12 @@
-import { Controller, Delete, Get, Param, Patch, Query } from '@nestjs/common';
+import {
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { HistoryService } from './history.service';
 import { getCurrentUser } from 'src/common/decorators';
 
@@ -6,7 +14,15 @@ import { getCurrentUser } from 'src/common/decorators';
 export class HistoryController {
   constructor(private historyService: HistoryService) {}
 
-  @Get(':userId')
+  @Post('add/:postId')
+  async addHistory(
+    @getCurrentUser('id') userId: string,
+    @Param('postId') postId: string,
+  ) {
+    return this.historyService.markAsRead(userId, postId);
+  }
+
+  @Get()
   async getHistory(
     @getCurrentUser('id') userId: string,
     @Query('page') page: number = 1,
@@ -20,7 +36,7 @@ export class HistoryController {
     return this.historyService.removeHistory(historyId);
   }
 
-  @Delete('clearHistory/:userId')
+  @Delete('clearHistory')
   async clearHistory(@getCurrentUser('id') userId: string) {
     return this.historyService.clearHistory(userId);
   }

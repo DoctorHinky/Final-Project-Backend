@@ -18,14 +18,16 @@ export class HistoryService {
 
       const history = await this.prisma.history.findMany({
         where: { userId },
-        include: {
+        select: {
+          id: true,
+          postId: true,
+          readAt: true,
+          solvedAt: true,
           post: {
             select: {
               id: true,
               title: true,
               quickDescription: true,
-            },
-            include: {
               author: {
                 select: {
                   username: true,
