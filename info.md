@@ -20,7 +20,6 @@
 - [x] updateUser
 - [x] updateMe
 - [x] updatePassword -U
-- [ ] applyForAuthor
 - [x] createModerator
 - [x] deleteMyAccout
 - [x] deactivateMyAccount
@@ -82,9 +81,9 @@
 
 - [x] sendApplication -U
 - [x] cancelApplication -U
-- [ ] getAllApplications -M
-- [ ] getApplicationById -M ? unnötig kein UseCase
-- [ ] getApplicationByUserId -M
+- [x] getAllApplications -M
+- [x] getApplicationById -M ? unnötig kein UseCase
+- [x] getApplicationByUserId -M
 - [x] blockUserForApplication -M
 - [x] unblockUserForApplication -M
 

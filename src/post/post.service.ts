@@ -183,9 +183,7 @@ export class PostService {
 
     if (!user) throw new BadRequestException('no user founded');
 
-    let query: Prisma.PostWhereInput = {
-      published: true,
-    };
+    let query: Prisma.PostWhereInput = { published: true };
 
     const userAge = calcAge(user.birthdate);
 
