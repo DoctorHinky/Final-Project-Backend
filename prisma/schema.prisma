@@ -56,16 +56,16 @@ model User {
 
   // all children: const allChildren = [...user.childrenAsParent1, ...user.childrenAsParent2];
 
-  writtenPosts    Post[]     @relation("UserPosts") // geschriebene Posts
-  writtenComments Comment[]  @relation("UserComments") // geschriebene Kommentare
-  writtenRatings  Rating[]   @relation("UserRatings") // geschriebene Bewertungen
-  readPosts       ReadPost[]
+  writtenPosts    Post[]    @relation("UserPosts") // geschriebene Posts
+  writtenComments Comment[] @relation("UserComments") // geschriebene Kommentare
+  writtenRatings  Rating[]  @relation("UserRatings") // geschriebene Bewertungen
+  readPosts       History[]
 
   // Articles, Posts (written / moderated)
-  moderatedPosts    Post[]    @relation("ModeratorPosts") // wenn ein Moderator einen Post moderiert
+  moderatedPosts Post[]   @relation("ModeratorPosts") // wenn ein Moderator einen Post moderiert
   // Admin Meta
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   verified Boolean @default(false) // means this user has verified his email
 
@@ -127,7 +127,7 @@ enum UserRoles {
 }
 
 model Application {
-  id     String @id @default(uuid()) @db.Uuid
+  id     String  @id @default(uuid()) @db.Uuid
   userId String? @db.Uuid
   user   User?   @relation("Applications", fields: [userId], references: [id], onDelete: SetNull)
 
@@ -152,7 +152,7 @@ model ApplicationDocument {
   url        String // die Cloudinary-URL
   publicId   String // die Cloudinary-Public-ID → wichtig zum Löschen!
   type       ApplicationDocType @default(OTHER)
-  uploadedAt DateTime @default(now())
+  uploadedAt DateTime           @default(now())
 }
 
 enum ApplicationStatus {
@@ -245,6 +245,7 @@ model TicketMessage {
   ticketId String @db.Uuid
   ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 }
+
 // cloudinary files for tickets -> cleanup muss per funktio erfolgen
 model TicketFile {
   id       String @id @default(uuid()) @db.Uuid
@@ -276,9 +277,9 @@ model Chapter {
 }
 
 model Post {
-  id                String   @id @default(uuid()) @db.Uuid
-  title             String
-  quickDescription  String // das wird dann in der Übersicht gezeigt, und beim Klick wird der Post geladen, das entlastet die Datenbank
+  id               String @id @default(uuid()) @db.Uuid
+  title            String
+  quickDescription String // das wird dann in der Übersicht gezeigt, und beim Klick wird der Post geladen, das entlastet die Datenbank
 
   image             String? // optional | claudinary
   publicId_image    String? // notwendig wenn man löschen will
@@ -296,7 +297,7 @@ model Post {
   moderatorId String? @db.Uuid
   moderator   User?   @relation("ModeratorPosts", fields: [moderatorId], references: [id], onDelete: SetNull)
 
-  readByUser ReadPost[]
+  readByUser History[]
 
   published   Boolean   @default(false)
   publishedAt DateTime?
@@ -315,10 +316,9 @@ model Post {
   deletedByUser User?     @relation("PostDeletedBy", fields: [deletedBy], references: [id], onDelete: SetNull)
   deleteReason  String?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  popularityScore Int @default(0)
-
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  popularityScore Int      @default(0)
 }
 
 model Quiz {
@@ -333,6 +333,8 @@ model Quiz {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  History History[] // hier wird gespeichert, ob und wann der User das Quiz gelöst hat
 }
 
 model QuizQuestion {
@@ -363,7 +365,7 @@ model QuizAnswer {
 }
 
 // wie genau soll das aussehen?
-model ReadPost {
+model History {
   id     String @id @default(uuid()) @db.Uuid
   userId String @db.Uuid
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -371,6 +373,14 @@ model ReadPost {
   postId String   @db.Uuid
   post   Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
   readAt DateTime @default(now())
+
+  quizId String? @db.Uuid // if the post has a quiz, then this is the quizId
+  quiz   Quiz?   @relation(fields: [quizId], references: [id], onDelete: SetNull)
+
+  attempts   Int       @default(0)
+  solvedQuiz Boolean?
+  quizScore  Int?
+  solvedAt   DateTime?
 
   @@unique([userId, postId]) // unique constraint to avoid duplicates
 }
@@ -414,12 +424,12 @@ model Rating {
 }
 
 model Comment {
-  id     String @id @default(uuid()) @db.Uuid
-  postId String @db.Uuid // zu welchem Post gehört der Kommentar
-  post   Post   @relation("PostComments", fields: [postId], references: [id], onDelete: Cascade)
-  userId String @db.Uuid // wer den Kommentar geschrieben hat
-  user   User   @relation("UserComments", fields: [userId], references: [id], onDelete: Cascade)
-  thanksCount Int @default(0) // wie oft geliked
+  id          String @id @default(uuid()) @db.Uuid
+  postId      String @db.Uuid // zu welchem Post gehört der Kommentar
+  post        Post   @relation("PostComments", fields: [postId], references: [id], onDelete: Cascade)
+  userId      String @db.Uuid // wer den Kommentar geschrieben hat
+  user        User   @relation("UserComments", fields: [userId], references: [id], onDelete: Cascade)
+  thanksCount Int    @default(0) // wie oft geliked
 
   content   String
   createdAt DateTime @default(now())
