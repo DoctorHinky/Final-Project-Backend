@@ -383,6 +383,9 @@ model History {
   quizScore Int? 
   solvedAt DateTime?
 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@unique([userId, postId]) // unique constraint to avoid duplicates
 }
 

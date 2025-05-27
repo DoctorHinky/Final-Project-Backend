@@ -1,0 +1,4 @@
+- [ ] readlist erstellen, verlauf, fortschritt etc.
+- [ ] verifizieren von Usern (email)
+- [ ] reset password (one time token)??
+- [ ] hintergrund verbindengen legen, z.b. wenn post laden => read list... etc
