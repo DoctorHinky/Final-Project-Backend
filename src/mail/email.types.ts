@@ -27,9 +27,8 @@ export interface WelcomeEmailData extends BaseEmailData {
 }
 
 export interface PasswordResetData extends BaseEmailData {
-  firstname: string;
+  username: string;
   resetLink: string;
-  expirationTime: string;
 }
 
 export interface EmailTemplateConfig {

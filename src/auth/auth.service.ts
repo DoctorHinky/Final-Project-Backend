@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -139,6 +140,10 @@ export class AuthService {
     if (!passwordCheck) throw new UnauthorizedException('Invalid credentials');
 
     const tokens = await this.generateTokens(dbUser);
+    await this.prisma.user.update({
+      where: { id: dbUser.id },
+      data: { passwordResetToken: null },
+    });
     await this.updateRtHash(dbUser.id, tokens.refresh_token);
 
     return tokens;
@@ -179,7 +184,7 @@ export class AuthService {
 
     return newTokens;
   }
-
+  // die muss auch noch in den User service (updaten der email)
   async sendVerificationEmail(
     userId: string,
     email: string,
@@ -256,7 +261,84 @@ export class AuthService {
       }
     }
   }
-  passwordReset() {}
+  async sendResetMail(email?: string, username?: string) {
+    if (!email && !username) {
+      throw new BadRequestException('Email or username is required');
+    }
+    let user: User | null = null;
+    if (email) {
+      user = await this.prisma.user.findUnique({
+        where: { email },
+      });
+    } else if (username) {
+      user = await this.prisma.user.findUnique({
+        where: { username },
+      });
+    }
+
+    if (!user) throw new NotFoundException('User not found');
+
+    const resetToken = this.jwtService.sign(
+      { email: user.email },
+      {
+        secret: this.config.get<string>('JWT_RESET_PASSWORD_SECRET'),
+        expiresIn: '5m', // 5 minutes
+      },
+    );
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { passwordResetToken: await hashPassword(resetToken) },
+    });
+
+    const resetLink = `${this.config.get<string>('FRONTEND_URL')}/reset-password?token=${resetToken}`;
+    await this.mailService.sendPasswordResetEmail(user.email, {
+      username: user.username,
+      resetLink,
+    });
+    console.log(`Password reset email sent to ${user.email}`);
+    return { message: 'Password reset email sent' };
+  }
+
+  async passwordReset(token: string, newPassword: string) {
+    try {
+      const payload = this.jwtService.verify<{ email: string }>(token, {
+        secret: this.config.get<string>('JWT_RESET_PASSWORD_SECRET'),
+      });
+
+      if (!payload?.email) {
+        throw new ForbiddenException('Invalid token');
+      }
+
+      const user = await this.prisma.user.findUnique({
+        where: { email: payload.email },
+      });
+
+      if (!user || !user.passwordResetToken) {
+        throw new NotFoundException('User not found or reset token not set');
+      }
+
+      const isMatch = await verifyPassword(token, user.passwordResetToken);
+      if (!isMatch) {
+        throw new ForbiddenException('Invalid or expired token');
+      }
+
+      const hashedPassword = await hashPassword(newPassword);
+
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          password: hashedPassword,
+          passwordResetToken: null, // Clear the reset token after use
+        },
+      });
+
+      return { message: 'Password reset successful' };
+    } catch (error) {
+      console.error('Password reset error:', error);
+      throw new BadRequestException('Invalid or expired token');
+    }
+  }
 
   // this are helper functions that not actually belong to the service isself
   async updateRtHash(userId: string, refreshToken: string) {
