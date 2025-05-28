@@ -1,3 +1,5 @@
+import { UserRoles } from '@prisma/client';
+
 export interface BaseEmailData {
   [key: string]: any;
 }
@@ -41,6 +43,12 @@ export interface EmailVerificationData extends BaseEmailData {
   verificationLink: string;
 }
 
+export interface MakeModsData extends BaseEmailData {
+  username: string;
+  role: UserRoles;
+  systemmail: string;
+}
+
 // predefined Email Templates
 export const EMAIL_TEMPLATES = {
   APPLICATION_ACCEPTED: {
@@ -67,6 +75,10 @@ export const EMAIL_TEMPLATES = {
     templateName: 'welcome',
     subject: 'Welcome to LearnToGrow',
   },
+  MAKE_MODS: {
+    templateName: 'create-admin',
+    subject: 'You Have Been Made a Moderator',
+  },
   PASSWORD_RESET: {
     templateName: 'password-reset',
     subject: 'Reset Your Password',
@@ -80,4 +92,5 @@ export type EmailData =
   | BlockingFromApplicationData
   | WelcomeEmailData
   | EmailVerificationData
-  | PasswordResetData;
+  | PasswordResetData
+  | MakeModsData;

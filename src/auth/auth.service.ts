@@ -21,7 +21,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private config: ConfigService,
-    private readonly mailService: MailService, // Assuming you have a MailService for sending emails
+    private readonly mailService: MailService,
   ) {}
 
   private async generateTokens(user: User): Promise<Tokens> {

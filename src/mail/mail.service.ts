@@ -138,6 +138,16 @@ export class MailService {
     return this.sendTemplatedEmail(to, 'PASSWORD_RESET', data, from);
   }
 
+  // create mods
+
+  async sendMakeModsEmail(
+    to: string,
+    data: { username: string; role: string; systemmail: string },
+    from?: string,
+  ): Promise<void> {
+    return this.sendTemplatedEmail(to, 'MAKE_MODS', data, from);
+  }
+
   async sendNewsletter(
     recipients: string[],
     subject: string,
