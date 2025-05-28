@@ -7,6 +7,7 @@ import {
   UseGuards,
   HttpStatus,
   HttpCode,
+  Query,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { TrimPipe } from 'src/common/pipes/trim.pipe';
@@ -64,8 +65,11 @@ export class AuthController {
   @Post('passwordReset')
   async passwordReset() {}
 
-  @Post('verifyEmail')
-  async verifyEmail() {}
+  @PublicRoute()
+  @Get('verify-email')
+  async verifyEmail(@Query('token') token: string) {
+    await this.authService.verifyEmail(token);
+  }
 
   @Get('me')
   getMe() {}

@@ -121,6 +121,13 @@ export class MailService {
   ): Promise<void> {
     return this.sendTemplatedEmail(to, 'UNBLOCKING_USER', data, from);
   }
+  async sendEmailVerification(
+    to: string,
+    data: { verificationLink: string },
+    from?: string,
+  ): Promise<void> {
+    return this.sendTemplatedEmail(to, 'EMAIL_VERIFICATION', data, from);
+  }
 
   async sendNewsletter(
     recipients: string[],

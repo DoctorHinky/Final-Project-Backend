@@ -32,10 +32,14 @@ export interface PasswordResetData extends BaseEmailData {
   expirationTime: string;
 }
 
-// Template-Konfiguration
 export interface EmailTemplateConfig {
   templateName: string;
   subject: string;
+}
+
+export interface EmailVerificationData extends BaseEmailData {
+  firstname: string;
+  verificationLink: string;
 }
 
 // predefined Email Templates
@@ -56,6 +60,10 @@ export const EMAIL_TEMPLATES = {
     templateName: 'application-unblocked',
     subject: 'Your Account Has Been Unblocked from Applications',
   },
+  EMAIL_VERIFICATION: {
+    templateName: 'email-verification',
+    subject: 'Verify Your Email Address',
+  },
   WELCOME: {
     templateName: 'welcome',
     subject: 'Welcome to LearnToGrow',
@@ -72,4 +80,5 @@ export type EmailData =
   | ApplicationRejectedData
   | BlockingFromApplicationData
   | WelcomeEmailData
+  | EmailVerificationData
   | PasswordResetData;

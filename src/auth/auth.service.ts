@@ -12,6 +12,7 @@ import { LoginDto } from './dto/auth.login.dto';
 import { Tokens } from './types/token.type';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { MailService } from 'src/mail/mail.service';
 
 @Injectable()
 export class AuthService {
@@ -19,6 +20,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private config: ConfigService,
+    private readonly mailService: MailService, // Assuming you have a MailService for sending emails
   ) {}
 
   private async generateTokens(user: User): Promise<Tokens> {
@@ -88,6 +90,7 @@ export class AuthService {
 
       // save the hashed refresh token in the database
       await this.updateRtHash(newUser.id, tokens.refresh_token);
+      await this.sendVerificationEmail(newUser.id, email);
 
       // return the tokens
       // we can also return the user data if needed
@@ -177,8 +180,83 @@ export class AuthService {
     return newTokens;
   }
 
+  async sendVerificationEmail(
+    userId: string,
+    email: string,
+  ): Promise<{ message: string }> {
+    const payload = { sub: userId, email };
+    const token = this.jwtService.sign(payload, {
+      secret: this.config.get<string>('JWT_EMAIL_VERIFICATION_SECRET'),
+      expiresIn: '5m', // 5 minutes
+    });
+
+    const hashedToken = await hashPassword(token);
+
+    await this.prisma.emailVerificationToken.create({
+      data: {
+        userId,
+        token: hashedToken,
+        expiresAt: new Date(Date.now() + 5 * 60 * 1000), // 5 minutes from now
+      },
+    });
+    const verificationLink = `${this.config.get<string>('FRONTEND_URL')}/verify-email?token=${token}`;
+    await this.mailService.sendEmailVerification(email, { verificationLink }); // In der mail muss der normal token stehen, damit der User ihn in der URL verwenden kann
+    console.log(`Verification email sent to ${email}`);
+    return { message: 'email for verification has benn sendet' };
+  }
+
+  async verifyEmail(token: string) {
+    try {
+      const payload = this.jwtService.verify<{
+        sub: string;
+        email: string;
+      }>(token, {
+        secret: this.config.get<string>('JWT_EMAIL_VERIFICATION_SECRET'),
+      });
+
+      if (!payload?.sub) {
+        throw new ForbiddenException('Invalid token');
+      }
+
+      const tokens = await this.prisma.emailVerificationToken.findMany({
+        where: {
+          userId: payload.sub,
+          expiresAt: { gt: new Date() }, // Check if the token is not expired
+        },
+      });
+
+      const matched = await Promise.any(
+        tokens.map(async (t) => {
+          const isMatch = await verifyPassword(token, t.token);
+          if (isMatch) return t;
+          throw new Error();
+        }),
+      ).catch(() => null);
+
+      if (!matched) {
+        throw new ForbiddenException('Invalid or expired token');
+      }
+
+      await this.prisma.user.update({
+        where: { id: payload.sub },
+        data: { verified: true },
+      });
+
+      await this.prisma.emailVerificationToken.deleteMany({
+        where: { userId: payload.sub },
+      });
+
+      return { message: 'Email verified successfully' };
+    } catch (error) {
+      console.error('Email verification error:', error);
+      if (error instanceof ForbiddenException) {
+        throw error; // Re-throw known exceptions
+      } else {
+        throw new BadRequestException('Invalid or expired token');
+      }
+    }
+  }
   passwordReset() {}
-  verifyEmail() {}
 
   // this are helper functions that not actually belong to the service isself
   async updateRtHash(userId: string, refreshToken: string) {

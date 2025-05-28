@@ -68,9 +68,8 @@ model User {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  verified                   Boolean   @default(false) // means this user has verified his email
-  verificationToken          String? // token for email verification
-  verificationTokenExpiresAt DateTime? // when the token expires
+  verified               Boolean                  @default(false) // means this user has verified his email
+  EmailVerificationToken EmailVerificationToken[]
 
   // deletions
   isDeleted     Boolean   @default(false)
@@ -103,6 +102,15 @@ model User {
   TicketMessage TicketMessage[]
   Application   Application[]   @relation("ApplicationMod")
   CommentRating CommentRating[]
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  token     String // optional: verschlüsseln, falls nötig
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  expiresAt DateTime
 }
 
 model UserFile {
