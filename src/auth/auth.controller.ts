@@ -7,6 +7,8 @@ import {
   UseGuards,
   HttpStatus,
   HttpCode,
+  Query,
+  Patch,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { TrimPipe } from 'src/common/pipes/trim.pipe';
@@ -54,27 +56,30 @@ export class AuthController {
     return this.authService.refreshTokens(userId, refreshToken);
   }
 
-  @Post('passwordChange')
-  passwordChange() {
-    return {
-      message: 'password is changed',
-    };
-  }
-
   @Post('passwordReset')
   async passwordReset() {}
 
-  @Post('verifyEmail')
-  async verifyEmail() {}
+  @PublicRoute()
+  @Get('verify-email')
+  async verifyEmail(@Query('token') token: string) {
+    await this.authService.verifyEmail(token);
+  }
 
-  @Get('me')
-  getMe() {}
+  @PublicRoute()
+  @Post('password-reset-mail')
+  async sendResetMail(
+    @Body('email') email?: string,
+    @Body('username') username?: string,
+  ) {
+    return await this.authService.sendResetMail(email, username);
+  }
 
-  @Post('deleteUser')
-  // delete user will be a soft delete, we will not remove the user from the database
-  async deleteUser() {}
-
-  @Post('restoreUser')
-  // restore user will only be available for users with the role of admin
-  async restoreUser() {}
+  @PublicRoute()
+  @Patch('password-reset')
+  async resetPassword(
+    @Query('token') token: string,
+    @Body('newPassword') newPassword: string,
+  ) {
+    return await this.authService.passwordReset(token, newPassword);
+  }
 }

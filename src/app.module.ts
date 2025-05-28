@@ -9,6 +9,16 @@ import { SeedModule } from 'Admins/Seeder.module';
 import { RolesGuard } from './common/guards/roles.guard';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { TicketModule } from './ticket/ticket.module';
+import { PostModule } from './post/post.module';
+import { ChapterModule } from './chapter/chapter.module';
+import { QuizModule } from './quiz/quiz.module';
+import { RatingModule } from './rating/rating.module';
+import { CommentModule } from './comment/comment.module';
+import { CommentRatingModule } from './comment-rating/comment-rating.module';
+import { FriendModule } from './friend/friend.module';
+import { ApplicationModule } from './application/application.module';
+import { MailModule } from './mail/mail.module';
+import { HistoryModule } from './history/history.module';
 
 @Module({
   imports: [
@@ -21,6 +31,16 @@ import { TicketModule } from './ticket/ticket.module';
     SeedModule,
     CloudinaryModule,
     TicketModule,
+    PostModule,
+    ChapterModule,
+    QuizModule,
+    RatingModule,
+    CommentModule,
+    CommentRatingModule,
+    FriendModule,
+    ApplicationModule,
+    MailModule,
+    HistoryModule,
   ],
   providers: [
     { provide: 'APP_GUARD', useClass: AtGuard },

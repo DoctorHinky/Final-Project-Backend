@@ -8,24 +8,30 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// wichtig einen cascaded delete einfügen, damit die Datenbank nicht überquillt
+// zum datenschütz können wir die autoren nullen:
+// author   User   @relation("UserPosts", fields: [authorId], references: [id], onDelete: SetNull)
+
 model User {
-  id                 String    @id @default(uuid()) @db.Uuid
-  username           String    @unique // unique username
-  firstname          String // wenn kein ? dann ist es ein Pflichtfeld
-  lastname           String // wenn kein ? dann ist es ein Pflichtfeld
-  birthdate          DateTime
-  email              String    @unique // needed for verification or restoring
-  phone              String    @unique // for 2FA 
-  role               UserRoles @default(ADULT)
-  password           String // hashed password
-  hashedRefreshToken String? // hashed refresh token
-  profilePicture     String? // optional | claudinary
-  publicid_picture   String? // optional | claudinary
-  shortDescription   String? // optional
-  bio                String? // optional
+  id                  String    @id @default(uuid()) @db.Uuid
+  username            String    @unique // unique username
+  firstname           String // wenn kein ? dann ist es ein Pflichtfeld
+  lastname            String // wenn kein ? dann ist es ein Pflichtfeld
+  birthdate           DateTime
+  email               String    @unique // needed for verification or restoring
+  phone               String    @unique // for 2FA 
+  role                UserRoles @default(ADULT)
+  isPedagogicalAuthor Boolean   @default(false) // wir wollten das Pädagogische Authoren Hervorgehoben werden
+  password            String // hashed password
+  passwordResetToken  String? // token for password reset
+  hashedRefreshToken  String? // hashed refresh token
+  profilePicture      String? // optional | claudinary
+  publicid_picture    String? // optional | claudinary
+  shortDescription    String? // optional
+  bio                 String? // optional
 
   // UserFile relation - fixed one-to-one relation
-  userFile   UserFile? @relation("UserToFile", fields: [userFileId], references: [id])
+  userFile   UserFile? @relation("UserToFile", fields: [userFileId], references: [id], onDelete: Cascade)
   userFileId String?   @unique @db.Uuid
 
   // Relations
@@ -51,27 +57,25 @@ model User {
 
   // all children: const allChildren = [...user.childrenAsParent1, ...user.childrenAsParent2];
 
-  writtenPosts    Post[]     @relation("UserPosts") // geschriebene Posts
-  publishedPosts  Post[]     @relation("PublishedByUser") // veröffentlichte Posts
-  writtenComments Comment[]  @relation("UserComments") // geschriebene Kommentare
-  writtenRatings  Rating[]   @relation("UserRatings") // geschriebene Bewertungen
-  readPosts       ReadPost[]
+  writtenPosts    Post[]    @relation("UserPosts") // geschriebene Posts
+  writtenComments Comment[] @relation("UserComments") // geschriebene Kommentare
+  writtenRatings  Rating[]  @relation("UserRatings") // geschriebene Bewertungen
+  readPosts       History[]
 
   // Articles, Posts (written / moderated)
-  moderatedPosts    Post[]    @relation("ModeratorPosts") // wenn ein Moderator einen Post moderiert
-  moderatedComments Comment[] @relation("ModeratorComment") // wenn ein Moderator einen Kommentar moderiert
-
+  moderatedPosts Post[]   @relation("ModeratorPosts") // wenn ein Moderator einen Post moderiert
   // Admin Meta
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  verified Boolean @default(false) // means this user has verified his email
+  verified               Boolean                  @default(false) // means this user has verified his email
+  EmailVerificationToken EmailVerificationToken[]
 
   // deletions
   isDeleted     Boolean   @default(false)
   deletedAt     DateTime?
   deletedBy     String?   @db.Uuid // userId -> hier wird dann eingetragen wer den User gelöscht hat
-  deletedByUser User?     @relation("UserDeletedBy", fields: [deletedBy], references: [id]) // userId -> hier wird dann eingetragen welcher moderator den User gelöscht hat
+  deletedByUser User?     @relation("UserDeletedBy", fields: [deletedBy], references: [id], onDelete: SetNull) // userId -> hier wird dann eingetragen welcher moderator den User gelöscht hat
   deleteReason  String?
   deactivated   Boolean   @default(false)
 
@@ -97,13 +101,23 @@ model User {
   // useLess relations
   TicketMessage TicketMessage[]
   Application   Application[]   @relation("ApplicationMod")
+  CommentRating CommentRating[]
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  token     String // optional: verschlüsseln, falls nötig
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  expiresAt DateTime
 }
 
 model UserFile {
   id String @id @default(uuid()) @db.Uuid
 
   // Fixed one-to-one relation with User
-  user   User?   @relation("UserToFile")
+  user User? @relation("UserToFile")
 
   tickets Ticket[] @relation("UserFile") // hier werden alle Tickets gespeichert
 
@@ -124,30 +138,32 @@ enum UserRoles {
 }
 
 model Application {
-  id     String @id @default(uuid()) @db.Uuid
-  userId String @db.Uuid
-  user   User   @relation("Applications", fields: [userId], references: [id])
+  id     String  @id @default(uuid()) @db.Uuid
+  userId String? @db.Uuid
+  user   User?   @relation("Applications", fields: [userId], references: [id], onDelete: SetNull)
 
-  modId String @db.Uuid
-  mod   User   @relation("ApplicationMod", fields: [modId], references: [id])
+  modId String? @db.Uuid
+  mod   User?   @relation("ApplicationMod", fields: [modId], references: [id], onDelete: SetNull)
 
   status  ApplicationStatus @default(PENDING)
   phone   String // Telefonnummer -> für Rückfragen
+  email   String // E-Mail-Adresse -> für Rückfragen
   content String // freier Text,
 
   referenceDocument ApplicationDocument[] // hier werden die Referenzdokumente gespeichert
   createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
 }
 
 model ApplicationDocument {
   id            String      @id @default(uuid()) @db.Uuid
   applicationId String      @db.Uuid
-  application   Application @relation(fields: [applicationId], references: [id])
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
 
   url        String // die Cloudinary-URL
   publicId   String // die Cloudinary-Public-ID → wichtig zum Löschen!
-  type       String // z.B. "screenshot", "logfile", optional
-  uploadedAt DateTime @default(now())
+  type       ApplicationDocType @default(OTHER)
+  uploadedAt DateTime           @default(now())
 }
 
 enum ApplicationStatus {
@@ -158,14 +174,21 @@ enum ApplicationStatus {
   CANCELED // abgebrochen
 }
 
+enum ApplicationDocType {
+  RESUME
+  COVER_LETTER
+  CERTIFICATION
+  OTHER
+}
+
 model Friendship {
   id String @id @default(uuid()) @db.Uuid
 
   initiatorId String @db.Uuid
   receiverId  String @db.Uuid
 
-  initiator User @relation("Initiator", fields: [initiatorId], references: [id]) // userId -> hier wird dann eingetragen wer die Anfrage gesendet hat
-  receiver  User @relation("Receiver", fields: [receiverId], references: [id]) // userId -> hier wird dann eingetragen wer die Anfrage empfangen hat
+  initiator User @relation("Initiator", fields: [initiatorId], references: [id], onDelete: Cascade) // userId -> hier wird dann eingetragen wer die Anfrage gesendet hat
+  receiver  User @relation("Receiver", fields: [receiverId], references: [id], onDelete: Cascade) // userId -> hier wird dann eingetragen wer die Anfrage empfangen hat
 
   createdAt DateTime @default(now())
 
@@ -177,8 +200,8 @@ model FriendRequest {
   senderId   String @db.Uuid // userId -> hier wird dann eingetragen wer die Anfrage gesendet hat
   receiverId String @db.Uuid // userId -> hier wird dann eingetragen wer die Anfrage empfangen hat
 
-  sender   User @relation("SendRequests", fields: [senderId], references: [id])
-  receiver User @relation("ReceivedRequest", fields: [receiverId], references: [id])
+  sender   User @relation("SendRequests", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("ReceivedRequest", fields: [receiverId], references: [id], onDelete: Cascade)
 
   status      FriendRequestStatus @default(PENDING)
   createdAt   DateTime            @default(now())
@@ -189,9 +212,10 @@ model FriendRequest {
 
 enum FriendRequestStatus {
   PENDING // Anfrage gesendet
-  ACCEPTED // Anfrage angenommen
   REJECTED // Anfrage abgelehnt
   BLOCKED // Anfrage blockiert
+  // ACCEPTED // unnötig, da Freundschaftsrelationen bereits die Akzeptanz abbilden
+  CANCELED // Anfrage abgebrochen
 }
 
 // ticket kann man im Support erstellen, und dann wird es noch eine meldefunktion geben, als Report
@@ -199,7 +223,7 @@ model Ticket {
   id String @id @default(uuid()) @db.Uuid
 
   userFileId String   @db.Uuid // die id der Userakte
-  userFile   UserFile @relation("UserFile", fields: [userFileId], references: [id])
+  userFile   UserFile @relation("UserFile", fields: [userFileId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -212,7 +236,7 @@ model Ticket {
 
   // moderatoren
   workedById String? @db.Uuid
-  workedBy   User?   @relation("WorkedByUser", fields: [workedById], references: [id])
+  workedBy   User?   @relation("WorkedByUser", fields: [workedById], references: [id], onDelete: SetNull)
 
   // messages
   messages TicketMessage[]
@@ -230,9 +254,10 @@ model TicketMessage {
 
   // ticket relation
   ticketId String @db.Uuid
-  ticket   Ticket @relation(fields: [ticketId], references: [id])
+  ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 }
 
+// cloudinary files for tickets -> cleanup muss per funktio erfolgen
 model TicketFile {
   id       String @id @default(uuid()) @db.Uuid
   ticket   Ticket @relation(fields: [ticketId], references: [id])
@@ -250,103 +275,205 @@ enum TicketStatus {
   CANCELED
 }
 
+model Chapter {
+  id             String  @id @default(uuid()) @db.Uuid
+  title          String?
+  content        String
+  image          String?
+  publicId_image String? // notwendig zum löschen
+
+  // post relation
+  postId String @db.Uuid
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade) // hier wird dann eingetragen zu welchem Post das Kapitel gehört
+}
+
 model Post {
-  id                String   @id @default(uuid()) @db.Uuid
-  title             String
-  content           String
+  id               String @id @default(uuid()) @db.Uuid
+  title            String
+  quickDescription String // das wird dann in der Übersicht gezeigt, und beim Klick wird der Post geladen, das entlastet die Datenbank
+
   image             String? // optional | claudinary
+  publicId_image    String? // notwendig wenn man löschen will
   tags              String[] // array of strings
-  ageRestriction    Int // notwendig da wir für unterschiedliche Altersgruppen unterschiedliche Inhalte haben
+  forKids           Boolean  @default(false) // wenn für Kinder, dann hier die Altersbeschränkung
+  ageRestriction    Int      @default(18) // wenn für Kinder, dann hier die Altersbeschränkung
   isCertifiedAuthor Boolean  @default(false) // wir wollten das Pädagogische Authoren Hervorgehoben werden
 
   // Capital Controlling | self-relations
-  preCapital       Post?   @relation("PrePostRelation", fields: [preCapitalId], references: [id])
-  preCapitalId     String? @db.Uuid // wenn es einen Vorgänger gibt, dann wird hier der Vorgänger eingetragen
-  nextCapitalPosts Post[]  @relation("PrePostRelation") // added opposite relation field
+  chapters Chapter[]
 
-  nextCapital      Post?   @relation("NextPostRelation", fields: [nextCapitalId], references: [id])
-  nextCapitalId    String? @db.Uuid // wenn es einen Nachfolger gibt, dann wird hier der Nachfolger eingetragen
-  prevCapitalPosts Post[]  @relation("NextPostRelation") // added opposite relation field
-
-  capital Int? // wie viele Kapitel der Artikel hat hat
-
-  authorId String @db.Uuid
-  author   User   @relation("UserPosts", fields: [authorId], references: [id])
+  authorId String? @db.Uuid
+  author   User?   @relation("UserPosts", fields: [authorId], references: [id], onDelete: SetNull)
 
   moderatorId String? @db.Uuid
-  moderator   User?   @relation("ModeratorPosts", fields: [moderatorId], references: [id])
+  moderator   User?   @relation("ModeratorPosts", fields: [moderatorId], references: [id], onDelete: SetNull)
 
-  readByUser ReadPost[]
+  readByUser History[]
 
-  published       Boolean   @default(false)
-  publishedAt     DateTime?
-  publishedBy     String?   @db.Uuid // userId
-  publishedByUser User?     @relation("PublishedByUser", fields: [publishedBy], references: [id])
+  published   Boolean   @default(false)
+  publishedAt DateTime?
 
   // comments & Ratings
   comments Comment[] @relation("PostComments")
   ratings  Rating[]  @relation("PostRatings")
 
+  // quiz
+  quiz Quiz? @relation("PostQuiz") // quizId
+
   // admin meta
   isDeleted     Boolean   @default(false)
   deletedAt     DateTime?
   deletedBy     String?   @db.Uuid // userId
-  deletedByUser User?     @relation("PostDeletedBy", fields: [deletedBy], references: [id]) // userId -> hier wird dann eingetragen wer den Post gelöscht hat
+  deletedByUser User?     @relation("PostDeletedBy", fields: [deletedBy], references: [id], onDelete: SetNull)
   deleteReason  String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  popularityScore Int      @default(0)
+}
+
+model Quiz {
+  id     String @id @default(uuid()) @db.Uuid
+  postId String @unique @db.Uuid
+  post   Post   @relation("PostQuiz", fields: [postId], references: [id], onDelete: Cascade)
+
+  title String
+
+  // questions
+  questions QuizQuestion[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  History History[] // hier wird gespeichert, ob und wann der User das Quiz gelöst hat
+}
+
+model QuizQuestion {
+  id     String @id @default(uuid()) @db.Uuid
+  quizId String @db.Uuid
+  quiz   Quiz   @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  question String // die Frage
+
+  // answers
+  answers     QuizAnswer[]
+  explanation String? // erklärung der richtigen Antwort
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-model ReadPost {
+model QuizAnswer {
+  id         String       @id @default(uuid()) @db.Uuid
+  questionId String       @db.Uuid
+  question   QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  answer    String // die Antwort
+  isCorrect Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// wie genau soll das aussehen?
+model History {
   id     String @id @default(uuid()) @db.Uuid
   userId String @db.Uuid
-  user   User   @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   postId String   @db.Uuid
-  post   Post     @relation(fields: [postId], references: [id])
+  post   Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
   readAt DateTime @default(now())
+
+  quizId String? @db.Uuid // if the post has a quiz, then this is the quizId
+  quiz   Quiz?   @relation(fields: [quizId], references: [id], onDelete: SetNull)
+
+  attempts   Int       @default(0)
+  solvedQuiz Boolean?
+  quizScore  Int?
+  solvedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([userId, postId]) // unique constraint to avoid duplicates
 }
 
+// Example: Get count of Likes and Dislikes for a post
+// const likes = await prisma.rating.count({
+//   where: { postId: '...' , value: 1 },
+// });
+// const dislikes = await prisma.rating.count({
+//   where: { postId: '...' , value: -1 },
+// });
+// console.log({ Likes: likes, Dislikes: dislikes }); // { Likes: 1943, Dislikes: 204 }
+
+// Example: Get sum of Likes and Dislikes for a post (if you store values differently)
+// const { _sum } = await prisma.rating.aggregate({
+//   where: { postId: '...' },
+//   _sum: { value: true },
+// });
+// console.log(_sum); // { value: ... }
+
+model Rating {
+  id     String  @id @default(uuid()) @db.Uuid
+  postId String  @db.Uuid
+  post   Post    @relation("PostRatings", fields: [postId], references: [id], onDelete: Cascade)
+  userId String? @db.Uuid
+  user   User?   @relation("UserRatings", fields: [userId], references: [id], onDelete: SetNull)
+
+  value     Int // 1 = like, -1 = dislike
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  isDeleted     Boolean   @default(false)
+  deletedAt     DateTime?
+  deletedBy     String?   @db.Uuid // userId
+  deletedByUser User?     @relation("RatingDeletedBy", fields: [deletedBy], references: [id], onDelete: Cascade) // userId -> hier wird dann eingetragen wer den Kommentar gelöscht hat
+  deleteReason  String?
+
+  @@unique([postId, userId]) // jeder user kann nur einmal bewerten
+  @@index([postId])
+  @@index([userId])
+}
+
 model Comment {
-  id     String @id @default(uuid()) @db.Uuid
-  postId String @db.Uuid // zu welchem Post gehört der Kommentar
-  post   Post   @relation("PostComments", fields: [postId], references: [id])
-  userId String @db.Uuid // wer den Kommentar geschrieben hat
-  user   User   @relation("UserComments", fields: [userId], references: [id])
+  id          String @id @default(uuid()) @db.Uuid
+  postId      String @db.Uuid // zu welchem Post gehört der Kommentar
+  post        Post   @relation("PostComments", fields: [postId], references: [id], onDelete: Cascade)
+  userId      String @db.Uuid // wer den Kommentar geschrieben hat
+  user        User   @relation("UserComments", fields: [userId], references: [id], onDelete: Cascade)
+  thanksCount Int    @default(0) // wie oft geliked
 
   content   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  moderatorId String? @db.Uuid // userId
-  moderator   User?   @relation("ModeratorComment", fields: [moderatorId], references: [id])
+  // das antworten von Ids möglich machen
+  parentId String?   @db.Uuid // zu welchem Kommentar gehört der Kommentar
+  parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies  Comment[] @relation("CommentReplies")
 
-  isDeleted     Boolean   @default(false)
+  isDeleted     Boolean         @default(false)
   deletedAt     DateTime?
-  deletedBy     String?   @db.Uuid // userId
-  deletedByUser User?     @relation("CommentDeletedBy", fields: [deletedBy], references: [id]) // userId -> hier wird dann eingetragen wer den Kommentar gelöscht hat
+  deletedBy     String?         @db.Uuid // userId
+  deletedByUser User?           @relation("CommentDeletedBy", fields: [deletedBy], references: [id], onDelete: SetNull) // userId -> hier wird dann eingetragen wer den Kommentar gelöscht hat
   deleteReason  String?
+  CommentRating CommentRating[]
+
+  @@index([postId]) // index for faster queries
+  @@index([deletedAt])
 }
 
-// model muss noch überarbeitet werden
-model Rating {
-  id     String @id @default(uuid()) @db.Uuid
-  postId String @db.Uuid
-  post   Post   @relation("PostRatings", fields: [postId], references: [id])
+model CommentRating {
+  commentId String  @db.Uuid
+  comment   Comment @relation(fields: [commentId], references: [id], onDelete: Cascade) // welcher kommentar hat die bewertung
+
   userId String @db.Uuid
-  user   User   @relation("UserRatings", fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade) // wer hat die bewertung abgegeben
 
-  Likes     Int
-  Dislikes  Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  value Int // 1 = like, -1 = dislike
 
-  isDeleted     Boolean   @default(false)
-  deletedAt     DateTime?
-  deletedBy     String?   @db.Uuid // userId
-  deletedByUser User?     @relation("RatingDeletedBy", fields: [deletedBy], references: [id]) // userId -> hier wird dann eingetragen wer den Kommentar gelöscht hat
-  deleteReason  String?
+  @@id([commentId, userId]) // composite primary key
+  @@unique([commentId, userId])
 }

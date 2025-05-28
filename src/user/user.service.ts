@@ -17,10 +17,16 @@ import {
   UpdateUserDto,
 } from './dto';
 import { hashPassword, verifyPassword } from 'src/auth/utils/password.utils';
+import { JwtService } from '@nestjs/jwt';
+import { MailService } from 'src/mail/mail.service';
 
 @Injectable()
 export class UserService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private jwtService: JwtService,
+    private mailService: MailService,
+  ) {}
 
   async getUserById(role: UserRoles, targetId: string) {
     if (!targetId) {
@@ -65,7 +71,6 @@ export class UserService {
       where: { username: userName, NOT: { isDeleted: true } },
       select: {
         username: true,
-        publishedPosts: true,
         birthdate: true,
         deactivated: true,
       },
@@ -88,10 +93,36 @@ export class UserService {
     return omit(user, ['password']);
   }
 
+  async sendVerificationEmail(
+    userId: string,
+    email: string,
+  ): Promise<{ message: string }> {
+    const payload = { sub: userId, email };
+    const token = this.jwtService.sign(payload, {
+      secret: process.env.JWT_EMAIL_VERIFICATION_SECRET,
+      expiresIn: '5m', // 5 minutes
+    });
+
+    const hashedToken = await hashPassword(token);
+
+    await this.prisma.emailVerificationToken.create({
+      data: {
+        userId,
+        token: hashedToken,
+        expiresAt: new Date(Date.now() + 5 * 60 * 1000), // 5 minutes from now
+      },
+    });
+    const verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
+    await this.mailService.sendEmailVerification(email, { verificationLink }); // In der mail muss der normal token stehen, damit der User ihn in der URL verwenden kann
+    console.log(`Verification email sent to ${email}`);
+    return { message: 'email for verification has benn sendet' };
+  }
+
   async updateMe(userId: string, updateData: UpdateMeDto) {
     try {
       if (updateData.email !== undefined) {
         updateData.verified = false;
+        await this.sendVerificationEmail(userId, updateData.email);
       }
 
       await this.prisma.user.update({
@@ -270,6 +301,12 @@ export class UserService {
         },
       });
 
+      await this.mailService.sendMakeModsEmail(target.email, {
+        username: target.username,
+        role: updateData.role,
+        systemmail: process.env.SYSTEM_EMAIL!,
+      });
+
       return `User with username ${target.username} is now a ${updateData.role}`;
     } catch (error) {
       if (error instanceof HttpException) {
@@ -291,12 +328,6 @@ export class UserService {
     }
   }
 
-  // wird erstmal pausiert, da wir noch kein Ticket, und Cloudinary haben
-  async applyForAuthor(userId: string) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    return user;
-  }
-
   async deleteMyAccount(userId: string, dto: DeleteAccountDto) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
 
@@ -315,6 +346,17 @@ export class UserService {
           deleteReason: dto.deleteReason ? dto.deleteReason : 'No reason given',
         },
       });
+      await this.mailService.sendMail(
+        user.email,
+        `your account has been deleted`,
+        `<p>Dear ${user.username},</p>
+        <p>Your account has been successfully deleted.</p>
+        <p>We keep your data for 30 days, in case you change your mind.</p>
+        <p>To restore your account, you have to contact us manually, via email at ${process.env.SYSTEM_EMAIL}.</p>
+        <p>Thank you for being a part of our community.</p>
+        <p>Best regards,</p>
+        <p>Your Team</p>`,
+      );
     } catch (error) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       if (error.code === 'P2025') {
@@ -347,6 +389,15 @@ export class UserService {
       } else {
         throw new BadRequestException('your account is already deactivated');
       }
+      await this.mailService.sendMail(
+        user.email,
+        `your account has been deactivated`,
+        `<p>Dear ${user.username},</p>
+        <p>Your account has been successfully deactivated.</p>
+        <p>To reactivate your account, you can do it manually via the settings page.</p>
+        <p>As long your account is deactivated, your posts, comments and likes will not be visible to other users.</p>
+        <p>If your stays deactivated for more than 6 month, your account will be deleted automatically.</p>`,
+      );
 
       return 'Account deactivated successfully';
     } catch (error) {
@@ -513,6 +564,19 @@ export class UserService {
           deleteReason: null,
         },
       });
+
+      await this.mailService.sendMail(
+        targetUser.email,
+        `Your account has been restored`,
+        `<p>Dear ${targetUser.username},</p>
+        <p>Your account has been successfully restored.</p>
+        <p>We are glad to have you back!</p>
+        <p>As a reminder, your account was deleted for the following reason: ${targetUser.deleteReason || 'No reason given'}</p>
+        <p>You can now log in again and continue using our services.</p>
+        <p>If you have any questions, feel free to contact us at ${process.env.SYSTEM_EMAIL}.</p>
+        <p>Best regards,</p>
+        <p>Your Team</p>`,
+      );
 
       return `User with username ${targetUser.username} is now restored`;
     } catch (error) {

@@ -20,7 +20,6 @@
 - [x] updateUser
 - [x] updateMe
 - [x] updatePassword -U
-- [ ] applyForAuthor
 - [x] createModerator
 - [x] deleteMyAccout
 - [x] deactivateMyAccount
@@ -33,16 +32,16 @@
 
 ### _Artikel oder Post_
 
-- [ ] getAllPosts -M ?
-- [ ] getPostById | getPostByName (ist okay wenn mehrere)
-- [ ] createPost
-- [ ] updatePost
-- [ ] removePost -U \* sollte auch für Autor gehen
-- [ ] deletePost -M
-- [ ] getAllPostsByUserId -M
-- [ ] getAllPostsByCategory
-- [ ] getAllPostsByTag
-- [ ] getPopularPosts
+- [x] getAllPosts -M ?
+- [x] getPostById | getPostByName (ist okay wenn mehrere)
+- [x] createPost
+- [x] updatePost
+- [x] removePost -U \* sollte auch für Autor gehen
+- [x] deletePost -M
+- [x] getAllPostsByUserId -M
+- [x] getAllPostsByCategory
+- [x] getAllPostsByTag
+- [x] getPopularPosts
 - [ ] getAllReadPostOfUser
 
 ---
@@ -59,52 +58,51 @@
 
 ### _Kommentare_
 
-- [ ] getAllComments
-  - byUser -M
-  - byPost (filter sollten optional sein einsetzbar sind)
-- [ ] getCommentById ? unnötig - M
-- [ ] createComment
-- [ ] updateComment
-- [ ] removeComment - U \* sollte auch für Autor gehen
-- [ ] deleteComment - M
+- [x] getAllComments
+  - [x] byUser -M
+  - [x] byPost (filter sollten optional sein einsetzbar sind)
+- [x] getCommentById ? unnötig - M
+- [x] createComment
+- [x] updateComment
+- [x] removeComment - U \* sollte auch für Autor gehen
+- [x] deleteComment - M
 
 ---
 
 ### _Rating_
 
-- [ ] addLike \* toggle mit add und remove
-- [ ] addDislike \* toggle mit add und remove
-- [ ] getRatingByPostId
-- [ ] getRatingByUserId -M
+- [x] addLike \* toggle mit add und remove
+- [x] addDislike \* toggle mit add und remove
+- [x] getRatingByPostId
 
 ---
 
 ### _Applications_
 
-- [ ] sendApplication -U
-- [ ] cancelApplication -U
-- [ ] getAllApplications -M
-- [ ] getApplicationById -M ? unnötig kein UseCase
-- [ ] getApplicationByUserId -M
-- [ ] blockUserForApplication -M
-- [ ] unblockUserForApplication -M
+- [x] sendApplication -U
+- [x] cancelApplication -U
+- [x] getAllApplications -M
+- [x] getApplicationById -M ? unnötig kein UseCase
+- [x] getApplicationByUserId -M
+- [x] blockUserForApplication -M
+- [x] unblockUserForApplication -M
 
-- [ ] takeApplication -M -> damit ändert sich der Status auf in_progress
-- [ ] acceptApplication -M -> hier kann dann eine automatische Email an den User gesendet werden
-- [ ] rejectApplication -M -> hier kann dann eine automatische Email an den User gesendet werden
+- [x] takeApplication -M -> damit ändert sich der Status auf in_progress
+- [x] acceptApplication -M -> hier kann dann eine automatische Email an den User gesendet werden
+- [x] rejectApplication -M -> hier kann dann eine automatische Email an den User gesendet werden
 
 ---
 
 ### _Freunde_
 
-- [ ] getAllFriends
-- [ ] getFriendById ?
-- [ ] addFriend
-- [ ] removeFriend
-- [ ] sendFriendRequest
-- [ ] cancelFriendRequest
-- [ ] acceptFriendRequest
-- [ ] rejectFriendRequest
+- [x] getAllFriends
+- [x] getFriendById ?
+- [x] addFriend
+- [x] removeFriend
+- [x] sendFriendRequest
+- [x] cancelFriendRequest
+- [x] acceptFriendRequest
+- [x] rejectFriendRequest
 
 ? eigentes Modul?
 
@@ -115,24 +113,24 @@
 
 ### _Tickets_
 
-- [ ] createTicket -> einstiegspunkt
-- [ ] getTickets -> hier mit optional filter aber dafault open
-- [ ] getAllTicketsByModeratorId
-- [ ] getAllTicketsByUserId -> im default viellicht getMyTickets / oder eigene Funktion
-- [ ] updateTicket -> hier müssen die Arbeiten und beschreibungen in die Tickets rein
-- [ ] takeTicket -M
-- [ ] reassignTicket ? bei Krankheit oder interessenkonflikten
-- [ ] getTicketById -M
-- [ ] cancelTicket -U -> wenn das Problem sich erledigt hat
-- [ ] closeTicket -M + U
+- [x] createTicket -> einstiegspunkt
+- [x] getTickets -> hier mit optional filter aber dafault open
+- [x] getAllTicketsByModeratorId
+- [x] getAllTicketsByUserId
+- [x] getMyTickets
+- [x] takeTicket -M
+- [x] reassignTicket ? bei Krankheit oder interessenkonflikten
+- [x] getTicketById -M
+- [x] cancelTicket -U -> wenn das Problem sich erledigt hat
+- [x] closeTicket -M + U
 
 ---
 
 ### _Moderation_
 
-- [ ] takeTicket
-- [ ] closeTicket
-- [ ] reopenTicket
+- [x] takeTicket
+- [x] closeTicket
+- [?] reopenTicket
 - [ ] openModLog ? wichtig oder?
       sonstige Funktionen werden von anderen Modulen abgedeckt:
 - erstellen von Autoren über updateUser
@@ -151,6 +149,6 @@
 
 ### Cronjobs
 
-- [ ] cloudinary-cleanup
+- [ ] cloudinary-cleanup -> profilbilder, posts bilder
 - [ ] delete old thinks -> das muss in jedes modul rein
 - [ ] closed tickets delete
