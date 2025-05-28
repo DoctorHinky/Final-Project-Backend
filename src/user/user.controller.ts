@@ -5,7 +5,6 @@ import {
   Get,
   Param,
   Patch,
-  Post,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
@@ -127,13 +126,6 @@ export class UserController {
     @Param('userId') targetId: string,
   ) {
     return this.userService.createModsAndAdmins(userId, targetId, dto);
-  }
-
-  @Post('applyForAuthor')
-  // Current user is der User selbst
-  applyForAuthor(@getCurrentUser('id') userId: string) {
-    // es muss noch geklärt werden wir der bewerbungsprozess aussieht
-    return this.userService.applyForAuthor(userId);
   }
 
   @Patch('deleteMyAccount')
