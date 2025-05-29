@@ -127,6 +127,7 @@ export class MailService {
     data: { verificationLink: string },
     from?: string,
   ): Promise<void> {
+    console.log('Sending email verification to:', to);
     return this.sendTemplatedEmail(to, 'EMAIL_VERIFICATION', data, from);
   }
 

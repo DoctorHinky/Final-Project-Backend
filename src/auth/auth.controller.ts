@@ -35,6 +35,7 @@ export class AuthController {
   @PublicRoute()
   @Post('local/login')
   async localLogin(@Body() loginDto: LoginDto): Promise<Tokens | void> {
+    console.log('Login attempt with:', loginDto);
     return await this.authService.localLogin(loginDto);
   }
 
