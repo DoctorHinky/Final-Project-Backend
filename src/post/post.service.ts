@@ -471,7 +471,6 @@ export class PostService {
     } else if (typeof data.forKids === 'boolean') {
       forKidsFlag = data.forKids;
     }
-
     // Validierung bei Kind-Beiträgen
     if (forKidsFlag === true) {
       const ageRestriction = data.ageRestriction ?? post.ageRestriction;
@@ -509,6 +508,41 @@ export class PostService {
       // hier sollte noch die mail an den author geschickt werden, dass der post vom moderator bearbeitet wurde
     } else {
       updateData = { ...data };
+    }
+
+    if (updateData.category) {
+      let enumCategory: PostCategory;
+      switch (updateData.category) {
+        case 'EDUCATION':
+          enumCategory = PostCategory.EDUCATION;
+          break;
+        case 'ENTERTAINMENT':
+          enumCategory = PostCategory.ENTERTAINMENT;
+          break;
+        case 'TECHNOLOGY':
+          enumCategory = PostCategory.TECHNOLOGY;
+          break;
+        case 'HEALTH':
+          enumCategory = PostCategory.HEALTH;
+          break;
+        case 'LIFESTYLE':
+          enumCategory = PostCategory.LIFESTYLE;
+          break;
+        case 'TRAVEL':
+          enumCategory = PostCategory.TRAVEL;
+          break;
+        case 'FOOD':
+          enumCategory = PostCategory.FOOD;
+          break;
+        case 'SPORTS':
+          enumCategory = PostCategory.SPORTS;
+          break;
+        default:
+          // wenn die Kategorie nicht in der Liste ist, dann wird sie als OTHER gespeichert
+          enumCategory = PostCategory.OTHER;
+          break;
+      }
+      updateData.category = enumCategory;
     }
 
     const updatedPost = await this.prisma.post.update({

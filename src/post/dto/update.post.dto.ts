@@ -41,6 +41,11 @@ export class UpdateMainPostDataDto {
   forKids?: any;
 
   @IsOptional()
+  @IsString()
+  @Transform(({ value }: { value: string }) => value?.toUpperCase())
+  category?: string;
+
+  @IsOptional()
   @Type(() => Array)
   @IsArray()
   @IsString({ each: true })
