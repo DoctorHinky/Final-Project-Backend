@@ -1,12 +1,25 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { BadRequestException, Injectable } from '@nestjs/common';
-import * as sgMail from '@sendgrid/mail';
+import * as nodemailer from 'nodemailer';
 import { compileTemplate } from './mail.helper';
 import { EMAIL_TEMPLATES, BaseEmailData } from './email.types';
 
 @Injectable()
 export class MailService {
+  private transporter: nodemailer.Transporter;
+
   constructor() {
-    sgMail.setApiKey(process.env.SEND_GRID_API!);
+    this.transporter = nodemailer.createTransport({
+      host: 'smtp.sendgrid.net',
+      port: 587,
+      secure: false,
+      auth: {
+        user: 'apikey',
+        pass: process.env.SEND_GRID_API!,
+      },
+    });
   }
 
   async sendMail(
@@ -31,7 +44,7 @@ export class MailService {
     };
 
     try {
-      await sgMail.send(msg);
+      await this.transporter.sendMail(msg);
     } catch (error) {
       console.error('Full error object:', JSON.stringify(error, null, 2));
       throw new BadRequestException(
@@ -71,7 +84,7 @@ export class MailService {
     };
 
     try {
-      await sgMail.send(msg);
+      await this.transporter.sendMail(msg);
     } catch (error) {
       console.error('Full error object:', JSON.stringify(error, null, 2));
       throw new BadRequestException(
@@ -149,7 +162,7 @@ export class MailService {
     return this.sendTemplatedEmail(to, 'MAKE_MODS', data, from);
   }
 
-  async sendNewsletter(
+  /* async sendNewsletter(
     recipients: string[],
     subject: string,
     html: string,
@@ -164,7 +177,7 @@ export class MailService {
     }));
 
     try {
-      await sgMail.send(messages, true); // true = send as batch
+      await this.transporter.sendMail(messages, true); // true = send as batch
       console.log(`sended ${recipients.length} newsletters.`);
     } catch (err) {
       console.error('errors while ', err);
@@ -172,5 +185,5 @@ export class MailService {
         cause: err,
       });
     }
-  }
+  } */
 }
