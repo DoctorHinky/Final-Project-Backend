@@ -3,7 +3,6 @@ import {
   IsNotEmpty,
   IsEmail,
   IsPhoneNumber,
-  IsOptional,
   IsDateString,
   Length,
 } from 'class-validator';
@@ -35,7 +34,6 @@ export class RegisterDto {
 
   @IsString()
   @IsNotEmpty()
-  @IsOptional()
   @Length(3, 10)
   @Transform(({ value }: { value: string }) => value?.toUpperCase())
   role: string;

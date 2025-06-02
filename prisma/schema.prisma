@@ -287,10 +287,23 @@ model Chapter {
   post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade) // hier wird dann eingetragen zu welchem Post das Kapitel gehört
 }
 
+enum PostCategory {
+  EDUCATION
+  ENTERTAINMENT
+  TECHNOLOGY
+  HEALTH
+  LIFESTYLE
+  TRAVEL
+  FOOD
+  SPORTS
+  OTHER // für alle anderen Kategorien, die nicht in der Liste sind
+}
+
 model Post {
-  id               String @id @default(uuid()) @db.Uuid
+  id               String       @id @default(uuid()) @db.Uuid
   title            String
   quickDescription String // das wird dann in der Übersicht gezeigt, und beim Klick wird der Post geladen, das entlastet die Datenbank
+  category         PostCategory @default(OTHER) // Kategorie des Posts
 
   image             String? // optional | claudinary
   publicId_image    String? // notwendig wenn man löschen will

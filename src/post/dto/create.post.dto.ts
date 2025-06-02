@@ -1,7 +1,8 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsArray,
   IsInt,
+  IsNotEmpty,
   IsOptional,
   IsString,
   IsUrl,
@@ -40,6 +41,12 @@ export class CreatePost {
 
   @IsOptional()
   forKids?: any;
+
+  @IsString()
+  @IsNotEmpty()
+  @Length(3, 10)
+  @Transform(({ value }: { value: string }) => value?.toUpperCase())
+  category: string;
 
   @IsArray()
   @IsString({ each: true })

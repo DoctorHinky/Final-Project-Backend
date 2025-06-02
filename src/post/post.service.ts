@@ -22,7 +22,7 @@ import {
 import { ChapterService } from 'src/chapter/chapter.service';
 import { QuizService } from 'src/quiz/quiz.service';
 import { calcAge } from 'src/common/helper/dates.helper';
-import { Post, Prisma, UserRoles } from '@prisma/client';
+import { Post, PostCategory, Prisma, UserRoles } from '@prisma/client';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { DeleteReasonDto } from './dto/delete-reason.dto';
 import { UploadApiResponse } from 'cloudinary';
@@ -127,6 +127,11 @@ export class PostService {
       const post = await this.prisma.post.findFirst({
         where: whereClause,
         include: {
+          author: {
+            select: {
+              username: true,
+            },
+          },
           chapters: {
             select: {
               id: true,
@@ -327,11 +332,50 @@ export class PostService {
       );
     }
 
+    let category: PostCategory;
+
+    switch (data.category?.toUpperCase()) {
+      case 'EDUCATION':
+        category = PostCategory.EDUCATION;
+        break;
+      case 'ENTERTAINMENT':
+        category = PostCategory.ENTERTAINMENT;
+        break;
+      case 'TECHNOLOGY':
+        category = PostCategory.TECHNOLOGY;
+        break;
+
+      case 'HEALTH':
+        category = PostCategory.HEALTH;
+        break;
+
+      case 'LIFESTYLE':
+        category = PostCategory.LIFESTYLE;
+        break;
+
+      case 'TRAVEL':
+        category = PostCategory.TRAVEL;
+        break;
+
+      case 'FOOD':
+        category = PostCategory.FOOD;
+        break;
+
+      case 'SPORTS':
+        category = PostCategory.SPORTS;
+        break;
+      default:
+        // wenn die Kategorie nicht in der Liste ist, dann wird sie als OTHER gespeichert
+        category = PostCategory.OTHER;
+        break;
+    }
+
     const updatedDTO: CreatePost = {
       ...data,
       image: main?.secure_url ?? null,
       publicId_image: main?.public_id ?? null,
       forKids: kidsflag,
+      category: category,
       chapters: data.chapters.map((chapter, i) => ({
         ...chapter,
         image: ChImages[i]?.secure_url ?? null,
@@ -790,20 +834,18 @@ export class PostService {
       data['moderatorId'] = user.id;
     }
 
-    const updatePost = await this.prisma.$transaction(async (tx) => {
-      await this.prisma.post.update({
-        where: { id: postId },
-        data: {
-          ...data,
-          updatedAt: new Date(),
-        },
-      });
-
-      await this.chapterService.addImage(chapterId, file, tx);
+    const updatedPost = await this.prisma.post.update({
+      where: { id: postId },
+      data: {
+        ...data,
+        updatedAt: new Date(),
+      },
     });
+
+    await this.chapterService.addImage(chapterId, file);
     return {
       message: 'Image added to chapter',
-      data: updatePost,
+      data: updatedPost,
     };
   }
 
