@@ -6,7 +6,9 @@
     "deleteOutDir": true,
     "assets": [
       { "include": "Admins/**/*", "watchAssets": true },
-      { "include": "prisma/**/*", "watchAssets": true }
+      { "include": "prisma/**/*", "watchAssets": true },
+      { "include": "**/*.json", "outDir": "./dist" },
+      { "include": "**/*.hbs", "outDir": "./dist" }
     ]
   }
 }
