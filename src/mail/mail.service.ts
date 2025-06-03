@@ -73,11 +73,12 @@ export class MailService {
     try {
       await sgMail.send(msg);
     } catch (error) {
-      console.error('Full error object:', JSON.stringify(error, null, 2));
-      throw new BadRequestException(
-        'Failed to send email',
-        'There was an error while trying to send the email.',
-      );
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      console.error('Full error object:', error?.response?.body || error);
+      throw new BadRequestException('Failed to send email', {
+        cause: error,
+        description: 'There was an error while trying to send the email.',
+      });
     }
   }
 
