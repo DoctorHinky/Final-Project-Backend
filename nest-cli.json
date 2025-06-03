@@ -7,8 +7,8 @@
     "assets": [
       { "include": "Admins/**/*", "watchAssets": true },
       { "include": "prisma/**/*", "watchAssets": true },
-      { "include": "**/*.json", "outDir": "./dist" },
-      { "include": "**/*.hbs", "outDir": "./dist" }
+      { "include": "data/*.json", "outDir": "dist/src/data" },
+      { "include": "**/*.hbs", "outDir": "./dist/src" }
     ]
   }
 }
