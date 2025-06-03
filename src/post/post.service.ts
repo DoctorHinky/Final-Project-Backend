@@ -369,12 +369,15 @@ export class PostService {
         category = PostCategory.OTHER;
         break;
     }
-    if (data.published === 'true') {
-      data.published = true;
-      data.publishedAt = new Date();
-    } else {
-      data.published = false;
-    }
+    const getBooleanValue = (value: any): boolean => {
+      if (typeof value === 'boolean') {
+        return value;
+      }
+      if (typeof value === 'string') {
+        return value.toLowerCase() === 'true';
+      }
+      return false; // Default to false if not a boolean or string
+    };
 
     const updatedDTO: CreatePost = {
       ...data,
@@ -397,6 +400,8 @@ export class PostService {
           image: updatedDTO.image ?? null,
           publicId_image: updatedDTO.publicId_image ?? null,
           tags: updatedDTO.tags,
+          published: getBooleanValue(updatedDTO.published),
+          publishedAt: updatedDTO.publishedAt ?? null,
           forKids: updatedDTO.forKids,
           ageRestriction: updatedDTO.ageRestriction,
           authorId: userId,
