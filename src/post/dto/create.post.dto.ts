@@ -1,6 +1,7 @@
 import { Transform, Type } from 'class-transformer';
 import {
   IsArray,
+  IsDate,
   IsInt,
   IsNotEmpty,
   IsOptional,
@@ -52,6 +53,15 @@ export class CreatePost {
   @IsString({ each: true })
   @Length(3, 25, { each: true })
   tags: string[];
+
+  @IsOptional()
+  @IsString()
+  published?: string | boolean;
+
+  @IsOptional()
+  @IsDate()
+  @Type(() => Date)
+  publishedAt?: Date;
 
   @ValidateNested({ each: true })
   @Type(() => ChapterDto)

@@ -369,6 +369,12 @@ export class PostService {
         category = PostCategory.OTHER;
         break;
     }
+    if (data.published === 'true') {
+      data.published = true;
+      data.publishedAt = new Date();
+    } else {
+      data.published = false;
+    }
 
     const updatedDTO: CreatePost = {
       ...data,
