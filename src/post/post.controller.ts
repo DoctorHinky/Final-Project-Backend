@@ -77,6 +77,11 @@ export class PostController {
     @Body() dto: any,
     @getCurrentUser('id') userId: string,
   ) {
+    console.log('======= Controller =======');
+    console.log('Files:', files);
+    console.log('DTO:', dto);
+    console.log('User ID:', userId);
+
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     return this.PostService.createPost(userId, dto, files);
   }

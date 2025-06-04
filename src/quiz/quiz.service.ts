@@ -18,10 +18,7 @@ export class QuizService extends BasePrismaService {
     const prisma = this.getPrisma(tx);
 
     const quiz = await prisma.quiz.create({
-      data: {
-        title: data.title,
-        postId: postId,
-      },
+      data: { postId: postId },
     });
 
     for (const questionDto of data.questions) {

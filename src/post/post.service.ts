@@ -143,7 +143,6 @@ export class PostService {
           quiz: {
             select: {
               id: true,
-              title: true,
               questions: {
                 select: {
                   id: true,

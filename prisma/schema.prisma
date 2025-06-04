@@ -350,7 +350,6 @@ model Quiz {
   postId String @unique @db.Uuid
   post   Post   @relation("PostQuiz", fields: [postId], references: [id], onDelete: Cascade)
 
-  title String
 
   // questions
   questions QuizQuestion[]
