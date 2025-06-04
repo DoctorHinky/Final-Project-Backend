@@ -30,6 +30,7 @@ export class AuthService {
         {
           userId: user.id,
           role: user.role,
+          username: user.username,
         },
         {
           expiresIn: 60 * 15,
