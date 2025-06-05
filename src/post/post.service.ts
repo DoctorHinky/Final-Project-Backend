@@ -26,6 +26,7 @@ import { Post, PostCategory, Prisma, UserRoles } from '@prisma/client';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { DeleteReasonDto } from './dto/delete-reason.dto';
 import { UploadApiResponse } from 'cloudinary';
+import _ from 'lodash';
 
 @Injectable()
 export class PostService {
@@ -332,14 +333,31 @@ export class PostService {
     }
 
     let category: PostCategory;
-
     switch (data.category?.toUpperCase()) {
       case 'EDUCATION':
         category = PostCategory.EDUCATION;
         break;
+
       case 'ENTERTAINMENT':
         category = PostCategory.ENTERTAINMENT;
         break;
+
+      case 'FAMILY':
+        category = PostCategory.FAMILY;
+        break;
+
+      case 'CULTURE':
+        category = PostCategory.CULTURE;
+        break;
+
+      case 'NATURE':
+        category = PostCategory.NATURE;
+        break;
+
+      case 'RAISING_CHILDREN':
+        category = PostCategory.RAISING_CHILDREN;
+        break;
+
       case 'TECHNOLOGY':
         category = PostCategory.TECHNOLOGY;
         break;
@@ -360,8 +378,11 @@ export class PostService {
         category = PostCategory.FOOD;
         break;
 
-      case 'SPORTS':
-        category = PostCategory.SPORTS;
+      case 'FITNESS':
+        category = PostCategory.FITNESS;
+        break;
+      case 'OTHER':
+        category = PostCategory.OTHER;
         break;
       default:
         // wenn die Kategorie nicht in der Liste ist, dann wird sie als OTHER gespeichert

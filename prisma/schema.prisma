@@ -288,14 +288,18 @@ model Chapter {
 }
 
 enum PostCategory {
-  EDUCATION
   ENTERTAINMENT
+  EDUCATION
+  RAISING_CHILDREN
+  FAMILY
+  CULTURE
+  NATURE
   TECHNOLOGY
   HEALTH
   LIFESTYLE
   TRAVEL
   FOOD
-  SPORTS
+  FITNESS
   OTHER // für alle anderen Kategorien, die nicht in der Liste sind
 }
 
