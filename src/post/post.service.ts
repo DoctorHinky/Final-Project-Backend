@@ -26,7 +26,6 @@ import { Post, PostCategory, Prisma, UserRoles } from '@prisma/client';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { DeleteReasonDto } from './dto/delete-reason.dto';
 import { UploadApiResponse } from 'cloudinary';
-import _ from 'lodash';
 
 @Injectable()
 export class PostService {
@@ -564,9 +563,6 @@ export class PostService {
           break;
         case 'FOOD':
           enumCategory = PostCategory.FOOD;
-          break;
-        case 'SPORTS':
-          enumCategory = PostCategory.SPORTS;
           break;
         default:
           // wenn die Kategorie nicht in der Liste ist, dann wird sie als OTHER gespeichert
