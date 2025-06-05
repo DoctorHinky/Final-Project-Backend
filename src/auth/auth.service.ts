@@ -124,15 +124,11 @@ export class AuthService {
 
     if (username) {
       dbUser = await this.prisma.user.findUnique({
-        where: {
-          username,
-        },
+        where: { username, isDeleted: false },
       });
     } else if (email) {
       dbUser = await this.prisma.user.findUnique({
-        where: {
-          email,
-        },
+        where: { email, isDeleted: false },
       });
     }
     if (!dbUser) throw new UnauthorizedException('Invalid credentials');
