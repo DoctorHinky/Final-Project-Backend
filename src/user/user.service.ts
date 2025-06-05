@@ -10,7 +10,6 @@ import { User, UserRoles } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { omit } from 'lodash';
 import {
-  CreateModsAndAdminsDto,
   DeleteAccountDto,
   UpdateMeDto,
   updatePassword,
@@ -194,9 +193,6 @@ export class UserService {
     if (updateData.email !== undefined) {
       updateData.verified = false;
     }
-
-    // hier ist es nicht möglich andere Mods oder Admins zu erstellen, dafür wird es eine extra function geben
-
     try {
       await this.prisma.user.update({
         where: { id: targetId },
@@ -278,11 +274,7 @@ export class UserService {
   }
 
   // mit dieser function können admins moderatoren und admins erstellen
-  async createModsAndAdmins(
-    userId: string,
-    targetId: string,
-    updateData: CreateModsAndAdminsDto,
-  ) {
+  async createModsAndAdmins(userId: string, targetId: string) {
     try {
       const user = (await this.prisma.user.findUnique({
         where: { id: userId },
@@ -311,18 +303,18 @@ export class UserService {
           'You can only create mods and admins that are created after you, (system securety)',
         );
       }
-      if (updateData.role === 'MODERATOR') {
-        updateData.role = UserRoles.MODERATOR;
-      } else if (updateData.role === 'ADMIN') {
-        updateData.role = UserRoles.ADMIN;
+      let role: UserRoles;
+
+      if (target.role === UserRoles.MODERATOR) {
+        role = UserRoles.ADMIN;
       } else {
-        throw new BadRequestException('Invalid role');
+        role = UserRoles.MODERATOR;
       }
 
       await this.prisma.user.update({
         where: { id: targetId },
         data: {
-          role: updateData.role,
+          role: role,
           moderatedAt: new Date(),
           moderatedBy: userId,
         },
@@ -330,11 +322,11 @@ export class UserService {
 
       await this.mailService.sendMakeModsEmail(target.email, {
         username: target.username,
-        role: updateData.role,
+        role: role,
         systemmail: process.env.SYSTEM_EMAIL!,
       });
 
-      return `User with username ${target.username} is now a ${updateData.role}`;
+      return `User with username ${target.username} is now a ${role}`;
     } catch (error) {
       if (error instanceof HttpException) {
         // Bekannte HTTP-Fehler einfach weiterwerfen

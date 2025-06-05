@@ -7,6 +7,7 @@ import { IsValidBirthdate } from 'src/common/decorators';
 export const AllowedRoles = {
   ADULT: UserRoles.ADULT,
   CHILD: UserRoles.CHILD,
+  AUTHOR: UserRoles.AUTHOR,
 } as const;
 
 type AllowedRoles = (typeof AllowedRoles)[keyof typeof AllowedRoles];

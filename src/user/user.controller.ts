@@ -14,7 +14,6 @@ import { UserRoles } from '@prisma/client';
 import { RequiredRoles } from 'src/common/decorators/roles.decorator';
 import { getCurrentUser } from 'src/common/decorators';
 import {
-  CreateModsAndAdminsDto,
   DeleteAccountDto,
   UpdateMeDto,
   updatePassword,
@@ -123,10 +122,9 @@ export class UserController {
   @RequiredRoles(UserRoles.ADMIN)
   createModsAndAdmins(
     @getCurrentUser('id') userId: string,
-    @Body() dto: CreateModsAndAdminsDto,
     @Param('userId') targetId: string,
   ) {
-    return this.userService.createModsAndAdmins(userId, targetId, dto);
+    return this.userService.createModsAndAdmins(userId, targetId);
   }
 
   @Get('getDeletedUsers')
