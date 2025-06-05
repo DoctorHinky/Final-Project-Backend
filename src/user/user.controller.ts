@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   Patch,
+  Query,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
@@ -50,7 +51,7 @@ export class UserController {
   }
 
   @Get('getUserByUserName')
-  getUserByUserName(@Body('userName') userName: string) {
+  getUserByUserName(@Query('userName') userName: string) {
     return this.userService.getUserByUserName(userName);
   }
 
@@ -126,6 +127,12 @@ export class UserController {
     @Param('userId') targetId: string,
   ) {
     return this.userService.createModsAndAdmins(userId, targetId, dto);
+  }
+
+  @Get('getDeletedUsers')
+  @RequiredRoles(UserRoles.ADMIN, UserRoles.MODERATOR)
+  getDeletedUsers() {
+    return this.userService.getDeletedUsers();
   }
 
   @Patch('deleteMyAccount')

@@ -227,6 +227,7 @@ export class UserService {
       }
     }
   }
+
   async updatePassword(userId: string, dto: updatePassword) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -248,6 +249,32 @@ export class UserService {
     });
 
     return 'Password updated successfully';
+  }
+
+  async getDeletedUsers() {
+    try {
+      await this.prisma.user.findMany({
+        where: { isDeleted: true },
+        include: {
+          deletedByUser: {
+            select: {
+              username: true,
+            },
+          },
+        },
+      });
+    } catch (error) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      if (error.code === 'P2025') {
+        throw new BadRequestException(
+          'Unknown error, cant fetch deleted users',
+        );
+      } else {
+        throw new Error(
+          'Unexpected error occurred while fetching deleted users',
+        );
+      }
+    }
   }
 
   // mit dieser function können admins moderatoren und admins erstellen

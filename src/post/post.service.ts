@@ -424,7 +424,7 @@ export class PostService {
         await this.quizService.createQuiz(newPost.id, updatedDTO.quiz, tx);
       }
       console.log('newPost', newPost);
-      return { message: 'Post created', postId: newPost.id };
+      return { message: 'Post created', postId: newPost.id, success: true };
     });
   }
 
