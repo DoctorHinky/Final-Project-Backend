@@ -57,10 +57,17 @@ export class PostController {
 
   @Get('getPostByAuthor/:authorId')
   async getPostByAuthor(
-    @getCurrentUser('roles') role: UserRoles,
+    @getCurrentUser() user: { id: string; roles: UserRoles },
     @Param('authorId') authorId: string,
+    @Query('published') published: string | undefined,
   ) {
-    return await this.PostService.getPostByAuthor(role, authorId);
+    console.log('author Posts');
+    return await this.PostService.getPostByAuthor(
+      user.roles,
+      authorId,
+      user.id,
+      published,
+    );
   }
   // hier ist ein fettes problem, wenn keine bilder gegeben sind bricht das system
   @Post('create')

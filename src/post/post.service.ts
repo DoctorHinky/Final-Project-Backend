@@ -110,7 +110,7 @@ export class PostService {
 
   async getPostById(userId: string, role: UserRoles, postId: string) {
     try {
-      let whereClause;
+      let whereClause: Prisma.PostWhereInput;
       if (role === UserRoles.ADMIN || role === UserRoles.MODERATOR) {
         whereClause = { id: postId };
       } else {
@@ -214,8 +214,14 @@ export class PostService {
     };
   }
 
-  async getPostByAuthor(role: UserRoles, authorId: string) {
+  async getPostByAuthor(
+    role: UserRoles,
+    authorId: string,
+    userId: string,
+    published: string | undefined = undefined,
+  ) {
     try {
+      console.log('anfrage kommt an', { role, authorId, userId, published });
       let posts: Post[] | null = null;
       if (role === UserRoles.ADMIN || role === UserRoles.MODERATOR) {
         posts = await this.prisma.post.findMany({
@@ -225,7 +231,17 @@ export class PostService {
             quiz: true,
           },
         });
+      } else if (userId === authorId && published === 'false') {
+        console.log('user is author and wants unpublished posts');
+        posts = await this.prisma.post.findMany({
+          where: { authorId, published: false },
+          include: {
+            chapters: true,
+            quiz: true,
+          },
+        });
       } else {
+        console.log('user is not author or wants published posts');
         posts = await this.prisma.post.findMany({
           where: { authorId, published: true },
           include: {
@@ -238,11 +254,8 @@ export class PostService {
       if (!posts || posts.length === 0) {
         throw new NotFoundException('Internal error: No posts found');
       }
-
-      return {
-        message: 'Posts found',
-        data: posts,
-      };
+      console.log('posts', posts);
+      return { posts };
     } catch (error) {
       throw new BadRequestException('Failed to fetch posts by author', {
         cause: error,
