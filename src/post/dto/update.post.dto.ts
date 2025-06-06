@@ -56,4 +56,7 @@ export class UpdateMainPostDataDto {
   )
   @Length(2, 50, { each: true })
   tags?: string[];
+
+  @IsOptional()
+  published?: string | boolean;
 }

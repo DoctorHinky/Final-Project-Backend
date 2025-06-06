@@ -14,6 +14,7 @@ import {
 } from 'class-validator';
 import { ChapterDto } from './create-chapter.dto';
 import { CreateQuizDto } from './create-quiz.dto';
+import { PostCategory } from '@prisma/client';
 
 export class CreatePost {
   @IsString()
@@ -47,7 +48,7 @@ export class CreatePost {
   @IsNotEmpty()
   @Length(3, 10)
   @Transform(({ value }: { value: string }) => value?.toUpperCase())
-  category: string;
+  category: PostCategory;
 
   @IsArray()
   @IsString({ each: true })

@@ -99,7 +99,7 @@ export class ChapterService extends BasePrismaService {
         publicId_image: image.public_id,
       },
     });
-    return updatedChapter;
+    return { data: updatedChapter.image };
   }
 
   async removeImage(chapterId: string, tx?: Prisma.TransactionClient) {

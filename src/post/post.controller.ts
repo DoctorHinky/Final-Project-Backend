@@ -61,7 +61,6 @@ export class PostController {
     @Param('authorId') authorId: string,
     @Query('published') published: string | undefined,
   ) {
-    console.log('author Posts');
     return await this.PostService.getPostByAuthor(
       user.roles,
       authorId,
@@ -84,11 +83,6 @@ export class PostController {
     @Body() dto: any,
     @getCurrentUser('id') userId: string,
   ) {
-    console.log('======= Controller =======');
-    console.log('Files:', files);
-    console.log('DTO:', dto);
-    console.log('User ID:', userId);
-
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     return this.PostService.createPost(userId, dto, files);
   }
@@ -126,7 +120,7 @@ export class PostController {
     return await this.PostService.addPostImage(user, postId, file);
   }
 
-  @Patch('removePostImage/:postId')
+  @Delete('removePostImage/:postId')
   @RequiredRoles(UserRoles.AUTHOR, UserRoles.ADMIN, UserRoles.MODERATOR)
   async removePostImage(
     @getCurrentUser() user: { id: string; roles: UserRoles },
@@ -213,7 +207,7 @@ export class PostController {
     );
   }
 
-  @Patch('removeChapterImage/:postId/:chapterId')
+  @Delete('removeChapterImage/:postId/:chapterId')
   @RequiredRoles(UserRoles.AUTHOR, UserRoles.ADMIN, UserRoles.MODERATOR)
   async removeChapterImage(
     @getCurrentUser() user: { id: string; roles: UserRoles },

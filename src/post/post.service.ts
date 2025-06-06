@@ -221,7 +221,6 @@ export class PostService {
     published: string | undefined = undefined,
   ) {
     try {
-      console.log('anfrage kommt an', { role, authorId, userId, published });
       let posts: Post[] | null = null;
       if (role === UserRoles.ADMIN || role === UserRoles.MODERATOR) {
         posts = await this.prisma.post.findMany({
@@ -232,7 +231,6 @@ export class PostService {
           },
         });
       } else if (userId === authorId && published === 'false') {
-        console.log('user is author and wants unpublished posts');
         posts = await this.prisma.post.findMany({
           where: { authorId, published: false },
           include: {
@@ -241,7 +239,6 @@ export class PostService {
           },
         });
       } else {
-        console.log('user is not author or wants published posts');
         posts = await this.prisma.post.findMany({
           where: { authorId, published: true },
           include: {
@@ -254,7 +251,6 @@ export class PostService {
       if (!posts || posts.length === 0) {
         throw new NotFoundException('Internal error: No posts found');
       }
-      console.log('posts', posts);
       return { posts };
     } catch (error) {
       throw new BadRequestException('Failed to fetch posts by author', {
@@ -292,7 +288,7 @@ export class PostService {
         // wenn wir Promise.all verwenden, wird der erste Fehler geworfen und die anderen Uploads werden nicht gemacht
         const results = await Promise.allSettled(
           chapterImages.map((f) =>
-            this.cloudinaryService.uploadFile(f, 'article/chapter'),
+            this.cloudinaryService.uploadFile(f, 'posts/chapter'),
           ),
         );
 
@@ -344,61 +340,61 @@ export class PostService {
       );
     }
 
-    let category: PostCategory;
+    let postCategory: PostCategory;
     switch (data.category?.toUpperCase()) {
       case 'EDUCATION':
-        category = PostCategory.EDUCATION;
+        postCategory = PostCategory.EDUCATION;
         break;
 
       case 'ENTERTAINMENT':
-        category = PostCategory.ENTERTAINMENT;
+        postCategory = PostCategory.ENTERTAINMENT;
         break;
 
       case 'FAMILY':
-        category = PostCategory.FAMILY;
+        postCategory = PostCategory.FAMILY;
         break;
 
       case 'CULTURE':
-        category = PostCategory.CULTURE;
+        postCategory = PostCategory.CULTURE;
         break;
 
       case 'NATURE':
-        category = PostCategory.NATURE;
+        postCategory = PostCategory.NATURE;
         break;
 
       case 'RAISING_CHILDREN':
-        category = PostCategory.RAISING_CHILDREN;
+        postCategory = PostCategory.RAISING_CHILDREN;
         break;
 
       case 'TECHNOLOGY':
-        category = PostCategory.TECHNOLOGY;
+        postCategory = PostCategory.TECHNOLOGY;
         break;
 
       case 'HEALTH':
-        category = PostCategory.HEALTH;
+        postCategory = PostCategory.HEALTH;
         break;
 
       case 'LIFESTYLE':
-        category = PostCategory.LIFESTYLE;
+        postCategory = PostCategory.LIFESTYLE;
         break;
 
       case 'TRAVEL':
-        category = PostCategory.TRAVEL;
+        postCategory = PostCategory.TRAVEL;
         break;
 
       case 'FOOD':
-        category = PostCategory.FOOD;
+        postCategory = PostCategory.FOOD;
         break;
 
       case 'FITNESS':
-        category = PostCategory.FITNESS;
+        postCategory = PostCategory.FITNESS;
         break;
       case 'OTHER':
-        category = PostCategory.OTHER;
+        postCategory = PostCategory.OTHER;
         break;
       default:
         // wenn die Kategorie nicht in der Liste ist, dann wird sie als OTHER gespeichert
-        category = PostCategory.OTHER;
+        postCategory = PostCategory.OTHER;
         break;
     }
     const getBooleanValue = (value: any): boolean => {
@@ -411,18 +407,27 @@ export class PostService {
       return false; // Default to false if not a boolean or string
     };
 
+    const tags = data.tags.flatMap((tag: string) =>
+      tag.split(',').map((t: string) => t.trim()),
+    );
+
     const updatedDTO: CreatePost = {
       ...data,
       image: main?.secure_url ?? null,
       publicId_image: main?.public_id ?? null,
       forKids: kidsflag,
-      category: category,
+      tags: tags,
+      category: postCategory,
       chapters: data.chapters.map((chapter, i) => ({
         ...chapter,
         image: ChImages[i]?.secure_url ?? null,
         publicId_image: ChImages[i]?.public_id ?? null,
       })),
     };
+    let published = false;
+    if (data.published === true || data.published === 'true') {
+      published = true;
+    }
 
     return this.prisma.$transaction(async (tx) => {
       const newPost = await this.prisma.post.create({
@@ -432,10 +437,11 @@ export class PostService {
           image: updatedDTO.image ?? null,
           publicId_image: updatedDTO.publicId_image ?? null,
           tags: updatedDTO.tags,
-          published: getBooleanValue(updatedDTO.published),
-          publishedAt: updatedDTO.publishedAt ?? null,
           forKids: updatedDTO.forKids,
+          published: published,
+          publishedAt: published ? new Date() : null,
           ageRestriction: updatedDTO.ageRestriction,
+          category: updatedDTO.category,
           authorId: userId,
           isCertifiedAuthor: certificated?.isPedagogicalAuthor ?? false,
         },
@@ -453,9 +459,10 @@ export class PostService {
         tx,
       );
 
-      if (data.quiz && Object.keys(data.quiz).length > 0) {
+      if (data.quiz && data.quiz.questions.length > 0) {
         await this.quizService.createQuiz(newPost.id, updatedDTO.quiz, tx);
       }
+
       console.log('newPost', newPost);
       return { message: 'Post created', postId: newPost.id, success: true };
     });
@@ -479,10 +486,9 @@ export class PostService {
       },
     });
 
-    if (!post) {
-      throw new NotFoundException('Post not found');
-    }
+    if (!post) throw new NotFoundException('Post not found');
 
+    // image ersetzen
     if (file) {
       if (post && post.publicId_image) {
         await this.cloudinaryService.deleteFile(post.publicId_image);
@@ -553,36 +559,65 @@ export class PostService {
       updateData = { ...data };
     }
 
-    if (updateData.category) {
-      let enumCategory: PostCategory;
-      switch (updateData.category) {
-        case 'EDUCATION':
-          enumCategory = PostCategory.EDUCATION;
-          break;
-        case 'ENTERTAINMENT':
-          enumCategory = PostCategory.ENTERTAINMENT;
-          break;
-        case 'TECHNOLOGY':
-          enumCategory = PostCategory.TECHNOLOGY;
-          break;
-        case 'HEALTH':
-          enumCategory = PostCategory.HEALTH;
-          break;
-        case 'LIFESTYLE':
-          enumCategory = PostCategory.LIFESTYLE;
-          break;
-        case 'TRAVEL':
-          enumCategory = PostCategory.TRAVEL;
-          break;
-        case 'FOOD':
-          enumCategory = PostCategory.FOOD;
-          break;
-        default:
-          // wenn die Kategorie nicht in der Liste ist, dann wird sie als OTHER gespeichert
-          enumCategory = PostCategory.OTHER;
-          break;
+    let category: PostCategory;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    switch (updateData.category?.toUpperCase()) {
+      case 'EDUCATION':
+        category = PostCategory.EDUCATION;
+        break;
+      case 'ENTERTAINMENT':
+        category = PostCategory.ENTERTAINMENT;
+        break;
+      case 'FAMILY':
+        category = PostCategory.FAMILY;
+        break;
+      case 'CULTURE':
+        category = PostCategory.CULTURE;
+        break;
+      case 'NATURE':
+        category = PostCategory.NATURE;
+        break;
+      case 'RAISING_CHILDREN':
+        category = PostCategory.RAISING_CHILDREN;
+        break;
+      case 'TECHNOLOGY':
+        category = PostCategory.TECHNOLOGY;
+        break;
+      case 'HEALTH':
+        category = PostCategory.HEALTH;
+        break;
+      case 'LIFESTYLE':
+        category = PostCategory.LIFESTYLE;
+        break;
+      case 'TRAVEL':
+        category = PostCategory.TRAVEL;
+        break;
+      case 'FITNESS':
+        category = PostCategory.FITNESS;
+        break;
+      case 'FOOD':
+        category = PostCategory.FOOD;
+        break;
+      case 'OTHER':
+        category = PostCategory.OTHER;
+        break;
+      default:
+        category = PostCategory.OTHER;
+        break;
+    }
+    updateData.category = category;
+
+    if (updateData.published === true || updateData.published === 'true') {
+      if (!post.published && user.id === post.authorId) {
+        updateData.published = true;
+        updateData.publishedAt = new Date();
       }
-      updateData.category = enumCategory;
+    } else if (
+      updateData.published === false ||
+      updateData.published === 'false'
+    ) {
+      updateData.published = false;
+      updateData.publishedAt = null;
     }
 
     const updatedPost = await this.prisma.post.update({
@@ -728,7 +763,12 @@ export class PostService {
         data: data,
       });
 
-      return 'Image added to post';
+      return {
+        message: 'Image added to post',
+        data: {
+          image: data.image,
+        },
+      };
     } catch (err) {
       if (err instanceof HttpException) {
         throw err;
@@ -908,18 +948,15 @@ export class PostService {
       data['moderatorId'] = user.id;
     }
 
-    const updatedPost = await this.prisma.post.update({
+    await this.prisma.post.update({
       where: { id: postId },
-      data: {
-        ...data,
-        updatedAt: new Date(),
-      },
+      data: { ...data, updatedAt: new Date() },
     });
 
-    await this.chapterService.addImage(chapterId, file);
+    const image = await this.chapterService.addImage(chapterId, file);
     return {
       message: 'Image added to chapter',
-      data: updatedPost,
+      data: image,
     };
   }
 
@@ -1315,7 +1352,7 @@ export class PostService {
           deleteReason: dto.reason || 'no reason provided',
         },
       });
-      return 'Post deleted, to restore it, please contact our support';
+      return { message: 'Post deleted' };
     });
   }
 

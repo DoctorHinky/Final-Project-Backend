@@ -6,11 +6,8 @@ import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 export const getCurrentUser = createParamDecorator(
   (data: string | undefined, context: ExecutionContext) => {
     const req = context.switchToHttp().getRequest();
-    if (data) {
-      // so wird nur dann der user zurückgegeben, wenn data gesetzt ist
-      return req.user?.[data];
-    }
-    console.log('req.user', req.user);
+    // so wird nur dann der user zurückgegeben, wenn data gesetzt ist
+    if (data) return req.user?.[data];
     return req.user;
   },
 );
