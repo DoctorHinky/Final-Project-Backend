@@ -249,7 +249,7 @@ export class UserService {
 
   async getDeletedUsers() {
     try {
-      await this.prisma.user.findMany({
+      return await this.prisma.user.findMany({
         where: { isDeleted: true },
         include: {
           deletedByUser: {
