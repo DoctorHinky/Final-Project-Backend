@@ -117,6 +117,7 @@ export class PostController {
     @Param('postId') postId: string,
     @UploadedFile() file: Express.Multer.File,
   ) {
+    console.log('Adding post image', postId);
     return await this.PostService.addPostImage(user, postId, file);
   }
 

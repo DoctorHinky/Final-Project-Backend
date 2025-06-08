@@ -75,6 +75,9 @@ export class PostService {
           quickDescription: true,
           image: true,
           isCertifiedAuthor: true,
+          category: true,
+          tags: true,
+          createdAt: true,
           author: {
             select: {
               username: true,
@@ -96,6 +99,9 @@ export class PostService {
             quickDescription: post.quickDescription,
             image: post.image,
             author: post.author?.username,
+            category: post.category,
+            createdAt: post.createdAt,
+            tags: post.tags || [],
             isCertifiedAuthor: post.isCertifiedAuthor,
           };
         }),
@@ -247,10 +253,6 @@ export class PostService {
           },
         });
       }
-
-      if (!posts || posts.length === 0) {
-        throw new NotFoundException('Internal error: No posts found');
-      }
       return { posts };
     } catch (error) {
       throw new BadRequestException('Failed to fetch posts by author', {
@@ -397,15 +399,6 @@ export class PostService {
         postCategory = PostCategory.OTHER;
         break;
     }
-    const getBooleanValue = (value: any): boolean => {
-      if (typeof value === 'boolean') {
-        return value;
-      }
-      if (typeof value === 'string') {
-        return value.toLowerCase() === 'true';
-      }
-      return false; // Default to false if not a boolean or string
-    };
 
     const tags = data.tags.flatMap((tag: string) =>
       tag.split(',').map((t: string) => t.trim()),
@@ -819,16 +812,14 @@ export class PostService {
         });
       }
 
-      await this.prisma.post.update({
-        where: { id: postId },
-        data: data,
-      });
+      await this.prisma.post.update({ where: { id: postId }, data: data });
 
       return 'image removed from post';
     } catch (err) {
       if (err instanceof HttpException) {
         throw err;
       }
+      console.error('Error removing image from post:', err);
       throw new BadRequestException('Failed to remove image from post', {
         cause: err,
         description: 'Failed to remove image from post',
@@ -954,6 +945,7 @@ export class PostService {
     });
 
     const image = await this.chapterService.addImage(chapterId, file);
+    console.log('image', image);
     return {
       message: 'Image added to chapter',
       data: image,
