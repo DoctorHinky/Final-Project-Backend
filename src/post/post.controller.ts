@@ -319,4 +319,26 @@ export class PostController {
   }
 
   // remove pictures from post, chapter
+
+  @Patch('updateFullPost/:postId')
+  @UseInterceptors(AnyFilesInterceptor({ storage: memoryStorage() }))
+  updateFullPost(
+    @getCurrentUser() user: { id: string; roles: UserRoles },
+    @Param('postId') postId: string,
+    @Query('published') published: string,
+    @Body('postData') postDataRaw: any,
+    @UploadedFiles() files: Express.Multer.File[],
+  ) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument
+    const postData = JSON.parse(postDataRaw);
+
+    return this.PostService.updateFullPost({
+      user,
+      postId,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      data: postData,
+      published: published === 'true',
+      files,
+    });
+  }
 }

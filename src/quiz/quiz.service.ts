@@ -67,6 +67,31 @@ export class QuizService extends BasePrismaService {
     });
     return question;
   }
+
+  async updateQuestion(
+    questionId: string,
+    data: QuizQuestionDto,
+    tx?: PrismaService | Prisma.TransactionClient,
+  ) {
+    const prisma = this.getPrisma(tx);
+
+    const question = await prisma.quizQuestion.findUnique({
+      where: { id: questionId },
+    });
+
+    if (!question) throw new NotFoundException('Question not found');
+
+    const updatedQuestion = await prisma.quizQuestion.update({
+      where: { id: questionId },
+      data: {
+        question: data.question,
+        explanation: data.explanation ?? null,
+      },
+    });
+
+    return updatedQuestion;
+  }
+
   async removeQuestion(
     questionId: string,
     tx: PrismaService | Prisma.TransactionClient,
@@ -95,12 +120,37 @@ export class QuizService extends BasePrismaService {
     return answer;
   }
 
+  async updateAnswer(
+    answerId: string,
+    data: QuizAnswerDto,
+    tx?: PrismaService | Prisma.TransactionClient,
+  ) {
+    const prisma = this.getPrisma(tx);
+
+    const answer = await prisma.quizAnswer.findUnique({
+      where: { id: answerId },
+    });
+
+    if (!answer) throw new NotFoundException('Answer not found');
+
+    const updatedAnswer = await prisma.quizAnswer.update({
+      where: { id: answerId },
+      data: {
+        answer: data.answer,
+        isCorrect: data.isCorrect,
+      },
+    });
+    return updatedAnswer;
+  }
+
   async removeAnswer(
     quesitonId: string,
     answerId: string,
-    tx: PrismaService | Prisma.TransactionClient,
+    tx?: PrismaService | Prisma.TransactionClient,
   ) {
-    const question = await tx.quizQuestion.findUnique({
+    const prisma = this.getPrisma(tx);
+
+    const question = await prisma.quizQuestion.findUnique({
       where: { id: quesitonId },
       include: {
         answers: true,
@@ -112,7 +162,7 @@ export class QuizService extends BasePrismaService {
     const answer = question.answers.find((answer) => answer.id === answerId);
     if (!answer) throw new NotFoundException('Answer not found');
 
-    await tx.quizAnswer.delete({
+    await prisma.quizAnswer.delete({
       where: { id: answerId },
     });
     return 'answer succesfully deleted';

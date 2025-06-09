@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
@@ -237,7 +238,15 @@ export class PostService {
           where: { authorId },
           include: {
             chapters: true,
-            quiz: true,
+            quiz: {
+              include: {
+                questions: {
+                  include: {
+                    answers: true,
+                  },
+                },
+              },
+            },
           },
         });
       } else if (userId === authorId && published === 'false') {
@@ -245,7 +254,15 @@ export class PostService {
           where: { authorId, published: false },
           include: {
             chapters: { where: { isDeleted: false } },
-            quiz: true,
+            quiz: {
+              include: {
+                questions: {
+                  include: {
+                    answers: true,
+                  },
+                },
+              },
+            },
           },
         });
       } else {
@@ -253,7 +270,15 @@ export class PostService {
           where: { authorId, published: true },
           include: {
             chapters: { where: { isDeleted: false } },
-            quiz: true,
+            quiz: {
+              include: {
+                questions: {
+                  include: {
+                    answers: true,
+                  },
+                },
+              },
+            },
           },
         });
       }
@@ -472,160 +497,171 @@ export class PostService {
     data: UpdateMainPostDataDto,
     file?: Express.Multer.File,
   ) {
-    const post = await this.prisma.post.findUnique({
-      where: { id: postId },
-      select: {
-        publicId_image: true,
-        authorId: true,
-        published: true,
-        forKids: true,
-        ageRestriction: true,
-      },
-    });
+    try {
+      const post = await this.prisma.post.findUnique({
+        where: { id: postId },
+        select: {
+          publicId_image: true,
+          authorId: true,
+          published: true,
+          forKids: true,
+          ageRestriction: true,
+        },
+      });
 
-    if (!post) throw new NotFoundException('Post not found');
+      if (!post) throw new NotFoundException('Post not found');
 
-    // image ersetzen
-    if (file) {
-      if (post && post.publicId_image) {
-        await this.cloudinaryService.deleteFile(post.publicId_image);
+      // image ersetzen
+      if (file) {
+        if (post && post.publicId_image) {
+          await this.cloudinaryService.deleteFile(post.publicId_image);
+        }
+
+        const image = await this.cloudinaryService.uploadFile(
+          file,
+          'posts/main',
+        );
+
+        if (!image || !image.secure_url) {
+          throw new BadRequestException('Failed to upload image');
+        }
+
+        data.image = image.secure_url;
+        data.publicId_image = image.public_id;
+      }
+      let updateData: any = { ...data };
+
+      let forKidsFlag: boolean | undefined;
+
+      if (typeof data.forKids === 'string') {
+        if (data.forKids === 'true') {
+          forKidsFlag = true;
+        } else if (data.forKids === 'false') {
+          forKidsFlag = false;
+        } else {
+          throw new BadRequestException(
+            'invalid value for forKids, has to be true or false',
+          );
+        }
+      } else if (typeof data.forKids === 'boolean') {
+        forKidsFlag = data.forKids;
+      }
+      // Validierung bei Kind-Beiträgen
+      if (forKidsFlag === true) {
+        const ageRestriction = data.ageRestriction ?? post.ageRestriction;
+
+        if (ageRestriction === undefined || ageRestriction === null) {
+          throw new BadRequestException(
+            'To mark this post as kid-friendly, you must provide ageRestriction',
+          );
+        }
+
+        if (ageRestriction < 0 || ageRestriction > 18) {
+          throw new BadRequestException(
+            'ageRestriction must be between 0 and 18 for kid posts',
+          );
+        }
       }
 
-      const image = await this.cloudinaryService.uploadFile(file, 'posts/main');
+      // merge final in updateData
+      if (forKidsFlag !== undefined) updateData.forKids = forKidsFlag;
 
-      if (!image || !image.secure_url) {
-        throw new BadRequestException('Failed to upload image');
-      }
+      if (post.authorId !== user.id) {
+        if (
+          user.roles !== UserRoles.ADMIN &&
+          user.roles !== UserRoles.MODERATOR
+        ) {
+          throw new ForbiddenException('You are not the author of this post');
+        }
+        updateData = {
+          ...data,
+          published: false,
+          publishedAt: null,
+          moderatorId: user.id,
+        };
 
-      data.image = image.secure_url;
-      data.publicId_image = image.public_id;
-    }
-    let updateData: any = { ...data };
-
-    let forKidsFlag: boolean | undefined;
-
-    if (typeof data.forKids === 'string') {
-      if (data.forKids === 'true') {
-        forKidsFlag = true;
-      } else if (data.forKids === 'false') {
-        forKidsFlag = false;
+        // hier sollte noch die mail an den author geschickt werden, dass der post vom moderator bearbeitet wurde
       } else {
-        throw new BadRequestException(
-          'invalid value for forKids, has to be true or false',
-        );
-      }
-    } else if (typeof data.forKids === 'boolean') {
-      forKidsFlag = data.forKids;
-    }
-    // Validierung bei Kind-Beiträgen
-    if (forKidsFlag === true) {
-      const ageRestriction = data.ageRestriction ?? post.ageRestriction;
-
-      if (ageRestriction === undefined || ageRestriction === null) {
-        throw new BadRequestException(
-          'To mark this post as kid-friendly, you must provide ageRestriction',
-        );
+        updateData = { ...data };
       }
 
-      if (ageRestriction < 0 || ageRestriction > 18) {
-        throw new BadRequestException(
-          'ageRestriction must be between 0 and 18 for kid posts',
-        );
+      let category: PostCategory;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      switch (updateData.category?.toUpperCase()) {
+        case 'EDUCATION':
+          category = PostCategory.EDUCATION;
+          break;
+        case 'ENTERTAINMENT':
+          category = PostCategory.ENTERTAINMENT;
+          break;
+        case 'FAMILY':
+          category = PostCategory.FAMILY;
+          break;
+        case 'CULTURE':
+          category = PostCategory.CULTURE;
+          break;
+        case 'NATURE':
+          category = PostCategory.NATURE;
+          break;
+        case 'RAISING_CHILDREN':
+          category = PostCategory.RAISING_CHILDREN;
+          break;
+        case 'TECHNOLOGY':
+          category = PostCategory.TECHNOLOGY;
+          break;
+        case 'HEALTH':
+          category = PostCategory.HEALTH;
+          break;
+        case 'LIFESTYLE':
+          category = PostCategory.LIFESTYLE;
+          break;
+        case 'TRAVEL':
+          category = PostCategory.TRAVEL;
+          break;
+        case 'FITNESS':
+          category = PostCategory.FITNESS;
+          break;
+        case 'FOOD':
+          category = PostCategory.FOOD;
+          break;
+        case 'OTHER':
+          category = PostCategory.OTHER;
+          break;
+        default:
+          category = PostCategory.OTHER;
+          break;
       }
-    }
+      updateData.category = category;
 
-    // merge final in updateData
-    if (forKidsFlag !== undefined) updateData.forKids = forKidsFlag;
-
-    if (post.authorId !== user.id) {
-      if (
-        user.roles !== UserRoles.ADMIN &&
-        user.roles !== UserRoles.MODERATOR
+      if (updateData.published === true || updateData.published === 'true') {
+        if (!post.published && user.id === post.authorId) {
+          updateData.published = true;
+          updateData.publishedAt = new Date();
+        }
+      } else if (
+        updateData.published === false ||
+        updateData.published === 'false'
       ) {
-        throw new ForbiddenException('You are not the author of this post');
+        updateData.published = false;
+        updateData.publishedAt = null;
       }
-      updateData = {
-        ...data,
-        published: false,
-        publishedAt: null,
-        moderatorId: user.id,
+
+      const updatedPost = await this.prisma.post.update({
+        where: { id: postId },
+        data: updateData,
+      });
+
+      return {
+        message: 'Post updated',
+        data: updatedPost,
       };
-
-      // hier sollte noch die mail an den author geschickt werden, dass der post vom moderator bearbeitet wurde
-    } else {
-      updateData = { ...data };
+    } catch (error) {
+      console.error('Error updating post:', error);
+      throw new BadRequestException('Failed to update post', {
+        cause: error,
+        description: 'Failed to update post',
+      });
     }
-
-    let category: PostCategory;
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-    switch (updateData.category?.toUpperCase()) {
-      case 'EDUCATION':
-        category = PostCategory.EDUCATION;
-        break;
-      case 'ENTERTAINMENT':
-        category = PostCategory.ENTERTAINMENT;
-        break;
-      case 'FAMILY':
-        category = PostCategory.FAMILY;
-        break;
-      case 'CULTURE':
-        category = PostCategory.CULTURE;
-        break;
-      case 'NATURE':
-        category = PostCategory.NATURE;
-        break;
-      case 'RAISING_CHILDREN':
-        category = PostCategory.RAISING_CHILDREN;
-        break;
-      case 'TECHNOLOGY':
-        category = PostCategory.TECHNOLOGY;
-        break;
-      case 'HEALTH':
-        category = PostCategory.HEALTH;
-        break;
-      case 'LIFESTYLE':
-        category = PostCategory.LIFESTYLE;
-        break;
-      case 'TRAVEL':
-        category = PostCategory.TRAVEL;
-        break;
-      case 'FITNESS':
-        category = PostCategory.FITNESS;
-        break;
-      case 'FOOD':
-        category = PostCategory.FOOD;
-        break;
-      case 'OTHER':
-        category = PostCategory.OTHER;
-        break;
-      default:
-        category = PostCategory.OTHER;
-        break;
-    }
-    updateData.category = category;
-
-    if (updateData.published === true || updateData.published === 'true') {
-      if (!post.published && user.id === post.authorId) {
-        updateData.published = true;
-        updateData.publishedAt = new Date();
-      }
-    } else if (
-      updateData.published === false ||
-      updateData.published === 'false'
-    ) {
-      updateData.published = false;
-      updateData.publishedAt = null;
-    }
-
-    const updatedPost = await this.prisma.post.update({
-      where: { id: postId },
-      data: updateData,
-    });
-
-    return {
-      message: 'Post updated',
-      data: updatedPost,
-    };
   }
 
   async publishPost(userId: string, postId: string) {
@@ -837,35 +873,51 @@ export class PostService {
     data: any,
     file?: Express.Multer.File,
   ) {
-    const post = await this.prisma.post.findUnique({
-      where: { id: postId },
-      select: { authorId: true, published: true },
-    });
+    try {
+      const post = await this.prisma.post.findUnique({
+        where: { id: postId },
+        select: { authorId: true, published: true },
+      });
 
-    if (!post) {
-      throw new NotFoundException('Post not found');
-    }
+      if (!post) {
+        throw new NotFoundException('Post not found');
+      }
 
-    if (post.authorId !== userId) {
-      throw new ForbiddenException('You are not the author of this post');
-    }
+      if (post.authorId !== userId) {
+        throw new ForbiddenException('You are not the author of this post');
+      }
 
-    let image;
-    if (file) {
-      image = await this.cloudinaryService.uploadFile(file, 'posts/chapters');
+      let image;
+      if (file) {
+        image = await this.cloudinaryService.uploadFile(file, 'posts/chapters');
 
-      if (!image || !image.secure_url) {
-        throw new BadRequestException('Failed to upload image');
+        if (!image || !image.secure_url) {
+          throw new BadRequestException('Failed to upload image');
+        }
+      }
+
+      const updatedDTO: ChapterDto = {
+        ...data,
+        image: image?.secure_url ?? null,
+        publicId_image: image?.public_id ?? null,
+      };
+
+      return this.chapterService.addNewChapter(postId, updatedDTO);
+    } catch (error) {
+      console.error('Error adding chapter:', error);
+      if (error instanceof NotFoundException) {
+        throw error;
+      } else if (error instanceof ForbiddenException) {
+        throw error;
+      } else if (error instanceof BadRequestException) {
+        throw error;
+      } else {
+        throw new BadRequestException('Failed to add chapter', {
+          cause: error,
+          description: 'Failed to add chapter',
+        });
       }
     }
-
-    const updatedDTO: ChapterDto = {
-      ...data,
-      image: image?.secure_url ?? null,
-      publicId_image: image?.public_id ?? null,
-    };
-
-    return this.chapterService.addNewChapter(postId, updatedDTO);
   }
 
   async updateChapter(
@@ -875,44 +927,63 @@ export class PostService {
     chapterId: string,
     file?: Express.Multer.File,
   ) {
-    const post = await this.prisma.post.findUnique({
-      where: { id: postId },
-      include: { chapters: true },
-    });
-    const chapter = post?.chapters.find((c) => c.id === chapterId);
-    if (!chapter) {
-      throw new NotFoundException('Chapter not found');
-    }
-
-    if (!post) {
-      throw new NotFoundException('Post not found');
-    }
-
-    if (
-      post.authorId !== user.id &&
-      user.roles !== UserRoles.ADMIN &&
-      user.roles !== UserRoles.MODERATOR
-    ) {
-      throw new ForbiddenException('You are not the author of this post');
-    }
-
-    if (user.roles === UserRoles.ADMIN || user.roles === UserRoles.MODERATOR) {
-      await this.prisma.post.update({
+    try {
+      const post = await this.prisma.post.findUnique({
         where: { id: postId },
-        data: { moderatorId: user.id, published: false, publishedAt: null },
+        include: { chapters: true },
       });
+      const chapter = post?.chapters.find((c) => c.id === chapterId);
+      if (!chapter) {
+        throw new NotFoundException('Chapter not found');
+      }
+
+      if (!post) {
+        throw new NotFoundException('Post not found');
+      }
+
+      if (
+        post.authorId !== user.id &&
+        user.roles !== UserRoles.ADMIN &&
+        user.roles !== UserRoles.MODERATOR
+      ) {
+        throw new ForbiddenException('You are not the author of this post');
+      }
+
+      if (
+        user.roles === UserRoles.ADMIN ||
+        user.roles === UserRoles.MODERATOR
+      ) {
+        await this.prisma.post.update({
+          where: { id: postId },
+          data: { moderatorId: user.id, published: false, publishedAt: null },
+        });
+      }
+
+      const newChapter = await this.chapterService.updateChapter(
+        chapterId,
+        data,
+        file,
+      );
+
+      return {
+        message: 'Chapter updated',
+        data: newChapter,
+      };
+    } catch (error) {
+      console.error('Error updating chapter:', error);
+      if (error instanceof NotFoundException) {
+        throw error;
+      } else if (error instanceof ForbiddenException) {
+        throw error;
+      } else if (error instanceof BadRequestException) {
+        throw error;
+      } else {
+        throw new BadRequestException('Failed to update chapter', {
+          cause: error,
+          description: 'Failed to update chapter',
+        });
+      }
     }
-
-    const newChapter = await this.chapterService.updateChapter(
-      chapterId,
-      data,
-      file,
-    );
-
-    return {
-      message: 'Chapter updated',
-      data: newChapter,
-    };
   }
 
   async deleteChapter(
@@ -1129,7 +1200,26 @@ export class PostService {
     }
   }
 
-  // wir könnten auch nur mit der questionId arbeiten und nach oben joinen, aber das macht die datenbank nicht mit da wir nur 100MB haben
+  async updateQuestion(questionId: string, data: QuizQuestionDto) {
+    try {
+      const updatedQuestion = await this.quizService.updateQuestion(
+        questionId,
+        data,
+      );
+      return {
+        message: 'Ok',
+        data: updatedQuestion,
+      };
+    } catch (err) {
+      if (err instanceof HttpException) {
+        throw err;
+      }
+      throw new BadRequestException('Failed to update question', {
+        cause: err,
+        description: 'Failed to update question',
+      });
+    }
+  }
 
   async removeQuestion(
     user: { id: string; roles: UserRoles },
@@ -1258,6 +1348,23 @@ export class PostService {
       throw new BadRequestException('Failed to add answer to question', {
         cause: err,
         description: 'Failed to add answer to question',
+      });
+    }
+  }
+
+  async updateAnswer(answerId: string, data: QuizAnswerDto) {
+    try {
+      await this.quizService.updateAnswer(answerId, data);
+      return {
+        message: 'Ok',
+      };
+    } catch (err) {
+      if (err instanceof HttpException) {
+        throw err;
+      }
+      throw new BadRequestException('Failed to update answer', {
+        cause: err,
+        description: 'Failed to update answer',
       });
     }
   }
@@ -1449,5 +1556,120 @@ export class PostService {
 
       return 'Post deleted';
     });
+  }
+
+  async updateFullPost({
+    user,
+    postId,
+    data,
+    published,
+    files,
+  }: {
+    user: { id: string; roles: UserRoles };
+    postId: string;
+    data: any;
+    published: string | boolean;
+    files: Express.Multer.File[];
+  }) {
+    const post = await this.prisma.post.findUnique({
+      where: { id: postId },
+      select: {
+        authorId: true,
+        published: true,
+        publicId_image: true,
+      },
+    });
+
+    if (!post) throw new NotFoundException('Post not found');
+
+    // 1. Hauptdaten updaten
+    if (data.title || data.description) {
+      await this.updatePost(
+        user,
+        postId,
+        {
+          title: data.title,
+          quickDescription: data.description,
+          forKids: data.forKids,
+          ageRestriction: data.ageRestriction,
+          category: data.category,
+        },
+        files.find((f) => f.fieldname === 'image'),
+      );
+    }
+
+    // 2. Kapitel behandeln
+    for (const chapter of data.chapters || []) {
+      if (chapter.delete && chapter.id) {
+        await this.deleteChapter(user, postId, chapter.id);
+      } else if (chapter.id) {
+        const clean = {
+          id: chapter.id as string,
+          title: chapter.title as string,
+          content: chapter.content as string,
+          image: chapter.image || null,
+          publicId_image: chapter.publicId_image || null,
+        };
+
+        await this.updateChapter(postId, user, clean, chapter.id); // ggf. File matchen
+      } else {
+        const file = files.find(
+          (f) => f.fieldname === `chapterImage_${chapter.index}`,
+        );
+
+        const clean = {
+          id: chapter.id,
+          title: chapter.title,
+          content: chapter.content,
+        };
+
+        await this.addChapter(postId, user.id, clean, file);
+      }
+    }
+    if (data.quiz) {
+      // 3. Quizfragen behandeln
+      for (const question of data.quiz?.questions || []) {
+        if (question.id) {
+          await this.updateQuestion(question.id, question);
+
+          for (const answer of question.answers || []) {
+            if (answer.delete) {
+              await this.removeAnswer(
+                user,
+                postId,
+                data.quiz.id,
+                question.id,
+                answer.id,
+              );
+            } else if (answer.id) {
+              await this.updateAnswer(answer.id, answer);
+            } else {
+              await this.addAnswer(
+                user,
+                postId,
+                data.quiz.id,
+                question.id,
+                answer,
+              );
+            }
+          }
+        } else {
+          await this.addQuestion(user, postId, question);
+        }
+      }
+    }
+
+    if (Boolean(published) !== Boolean(post.published)) {
+      console.log(
+        `Post ${postId} publish state changed from ${post.published} to ${published}`,
+      );
+      if (published === true || published === 'true') {
+        await this.publishPost(user.id, postId);
+      } else if (published === false || published === 'false') {
+        await this.unpublishPost(user, postId);
+      }
+    }
+
+    return { status: 'OK' };
   }
 }

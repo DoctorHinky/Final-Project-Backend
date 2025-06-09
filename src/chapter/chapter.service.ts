@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { BasePrismaService } from 'src/common/utilitys/base-prisma.service';
@@ -21,27 +25,43 @@ export class ChapterService extends BasePrismaService {
   ) {
     const prisma = this.getPrisma(tx);
 
-    await Promise.all(
-      data.map((chapter) => {
-        return prisma.chapter.create({
-          data: {
-            ...chapter,
-            postId: postId,
-          },
-        });
-      }),
-    );
+    try {
+      await Promise.all(
+        data.map((chapter) => {
+          return prisma.chapter.create({
+            data: {
+              ...chapter,
+              postId: postId,
+            },
+          });
+        }),
+      );
+    } catch (error) {
+      console.error('Error adding chapters to post:', error);
+      throw new BadRequestException('Post not found', {
+        cause: error,
+        description: 'Post not found',
+      });
+    }
   }
 
   async addNewChapter(postId: string, data: ChapterDto) {
     const prisma = this.getPrisma();
 
-    return await prisma.chapter.create({
-      data: {
-        ...data,
-        postId: postId,
-      },
-    });
+    try {
+      return await prisma.chapter.create({
+        data: {
+          ...data,
+          postId: postId,
+        },
+      });
+    } catch (error) {
+      console.error('Error adding new chapter:', error);
+      throw new BadRequestException('Post not found', {
+        cause: error,
+        description: 'Post not found',
+      });
+    }
   }
 
   async updateChapter(
@@ -77,6 +97,7 @@ export class ChapterService extends BasePrismaService {
       });
       return updatedChapter;
     } catch (err) {
+      console.error('Error updating chapter:', err);
       throw new NotFoundException('Chapter not found', {
         cause: err,
         description: 'Chapter not found',
@@ -89,75 +110,108 @@ export class ChapterService extends BasePrismaService {
     file: Express.Multer.File,
     tx?: Prisma.TransactionClient,
   ) {
-    const prisma = this.getPrisma(tx);
-    const image = await this.CloudinaryService.uploadFile(file);
+    try {
+      const prisma = this.getPrisma(tx);
+      const image = await this.CloudinaryService.uploadFile(file);
 
-    const updatedChapter = await prisma.chapter.update({
-      where: { id: chapterId },
-      data: {
-        image: image.secure_url,
-        publicId_image: image.public_id,
-      },
-    });
-    return { data: updatedChapter.image };
+      const updatedChapter = await prisma.chapter.update({
+        where: { id: chapterId },
+        data: {
+          image: image.secure_url,
+          publicId_image: image.public_id,
+        },
+      });
+      return { data: updatedChapter.image };
+    } catch (error) {
+      console.error('Error adding image to chapter:', error);
+      throw new BadRequestException('Failed to add image to chapter', {
+        cause: error,
+        description: 'Failed to add image to chapter',
+      });
+    }
   }
 
   async removeImage(chapterId: string, tx?: Prisma.TransactionClient) {
-    const prisma = this.getPrisma(tx);
-    const chapter = await prisma.chapter.findUnique({
-      where: { id: chapterId },
-    });
+    try {
+      const prisma = this.getPrisma(tx);
+      const chapter = await prisma.chapter.findUnique({
+        where: { id: chapterId },
+      });
 
-    if (!chapter) {
-      throw new NotFoundException('Chapter not found');
+      if (!chapter) {
+        throw new NotFoundException('Chapter not found');
+      }
+
+      if (chapter.publicId_image) {
+        await this.CloudinaryService.deleteFile(chapter.publicId_image);
+      }
+
+      const updatedChapter = await prisma.chapter.update({
+        where: { id: chapterId },
+        data: {
+          image: null,
+          publicId_image: null,
+        },
+      });
+      return updatedChapter;
+    } catch (error) {
+      console.error('Error removing image from chapter:', error);
+      throw new BadRequestException('Failed to remove image from chapter', {
+        cause: error,
+        description: 'Failed to remove image from chapter',
+      });
     }
-
-    if (chapter.publicId_image) {
-      await this.CloudinaryService.deleteFile(chapter.publicId_image);
-    }
-
-    const updatedChapter = await prisma.chapter.update({
-      where: { id: chapterId },
-      data: {
-        image: null,
-        publicId_image: null,
-      },
-    });
-    return updatedChapter;
   }
+
   async deleteChapter(chapterId: string, tx?: Prisma.TransactionClient) {
-    const prisma = this.getPrisma(tx);
+    try {
+      const prisma = this.getPrisma(tx);
 
-    const chapter = await prisma.chapter.findUnique({
-      where: { id: chapterId },
-    });
+      const chapter = await prisma.chapter.findUnique({
+        where: { id: chapterId },
+      });
 
-    if (!chapter) throw new NotFoundException('Chapter not found');
+      if (!chapter) throw new NotFoundException('Chapter not found');
 
-    await prisma.chapter.update({
-      where: { id: chapterId },
-      data: {
-        isDeleted: true,
-      },
-    });
-    return 'deleteChapter';
+      await prisma.chapter.update({
+        where: { id: chapterId },
+        data: {
+          isDeleted: true,
+        },
+      });
+      return 'deleteChapter';
+    } catch (error) {
+      console.error('Error deleting chapter:', error);
+      throw new NotFoundException('Chapter not found', {
+        cause: error,
+        description: 'Chapter not found',
+      });
+    }
   }
 
   async restoreChapter(chapterId: string, tx?: Prisma.TransactionClient) {
-    const prisma = this.getPrisma(tx);
+    try {
+      const prisma = this.getPrisma(tx);
 
-    const chapter = await prisma.chapter.findUnique({
-      where: { id: chapterId },
-    });
+      const chapter = await prisma.chapter.findUnique({
+        where: { id: chapterId },
+      });
 
-    if (!chapter) throw new NotFoundException('Chapter not found');
+      if (!chapter) throw new NotFoundException('Chapter not found');
 
-    await prisma.chapter.update({
-      where: { id: chapterId },
-      data: {
-        isDeleted: false,
-      },
-    });
-    return 'restoreChapter';
+      await prisma.chapter.update({
+        where: { id: chapterId },
+        data: {
+          isDeleted: false,
+        },
+      });
+      return 'restoreChapter';
+    } catch (error) {
+      console.error('Error restoring chapter:', error);
+      throw new NotFoundException('Chapter not found', {
+        cause: error,
+        description: 'Chapter not found',
+      });
+    }
   }
 }

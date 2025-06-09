@@ -1,6 +1,10 @@
-import { IsOptional, IsString, IsUrl, Length } from 'class-validator';
+import { IsOptional, IsString, IsUrl, IsUUID, Length } from 'class-validator';
 
 export class UpdateChapterDto {
+  @IsString()
+  @IsUUID()
+  id: string;
+
   @IsOptional()
   @IsString()
   @Length(5, 25)

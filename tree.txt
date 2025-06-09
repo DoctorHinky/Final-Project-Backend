@@ -1,0 +1,228 @@
+├── achtung.md
+├── Admins
+│   ├── Seeder.module.ts
+│   └── SeederService.ts
+├── docker-compose.yml
+├── Dockerfile
+├── eslint.config.mjs
+├── info.md
+├── jest.config.ts
+├── nest-cli.json
+├── nodemon.json
+├── package.json
+├── package-lock.json
+├── prisma
+│   ├── migrations
+│   │   ├── 20250514213810_init
+│   │   │   └── migration.sql
+│   │   ├── 20250517195947_added_new_post_model
+│   │   │   └── migration.sql
+│   │   ├── 20250517200531_added_possibility_to_aprove_authors
+│   │   │   └── migration.sql
+│   │   ├── 20250520131334_removed_oders_from_chapters
+│   │   │   └── migration.sql
+│   │   ├── 20250520204724_removed_publishedby
+│   │   │   └── migration.sql
+│   │   ├── 20250521194505_added_cascading_deletes_and_better_rating
+│   │   │   └── migration.sql
+│   │   ├── 20250522121207_added_kids_toggle
+│   │   │   └── migration.sql
+│   │   ├── 20250522141242_set_default_to_age_restriction
+│   │   │   └── migration.sql
+│   │   ├── 20250523180748_new_valuebase_for_likes_and_dislikes
+│   │   │   └── migration.sql
+│   │   ├── 20250523190534_populatity_score_for_posts
+│   │   │   └── migration.sql
+│   │   ├── 20250523210602_add_comment_answers_and_comment_ratings
+│   │   │   └── migration.sql
+│   │   ├── 20250524121456_added_thanks_count
+│   │   │   └── migration.sql
+│   │   ├── 20250524130512_removed_moderatetion_from_comment
+│   │   │   └── migration.sql
+│   │   ├── 20250524135339_added_indexes_for_comments
+│   │   │   └── migration.sql
+│   │   ├── 20250525210656_removed_accepted_state_for_friendships
+│   │   │   └── migration.sql
+│   │   ├── 20250526102629_added_optional_modding_and_cascading_in_application
+│   │   │   └── migration.sql
+│   │   ├── 20250526103006_added_email_to_application
+│   │   │   └── migration.sql
+│   │   ├── 20250526110151_added_all_needed_cascades
+│   │   │   └── migration.sql
+│   │   ├── 20250526135743_fixed_type_in_application
+│   │   │   └── migration.sql
+│   │   ├── 20250526202552_sync_to_db
+│   │   │   └── migration.sql
+│   │   ├── 20250527184206_renamed_readpost_and_readjustet
+│   │   │   └── migration.sql
+│   │   ├── 20250527185818_added_create_for_history
+│   │   │   └── migration.sql
+│   │   ├── 20250527214409_added_verification_and_resettoken
+│   │   │   └── migration.sql
+│   │   ├── 20250528091955_added_email_verification_model
+│   │   │   └── migration.sql
+│   │   ├── 20250602210439_added_post_categories
+│   │   │   └── migration.sql
+│   │   ├── 20250604191434_removed_quiz_title
+│   │   │   └── migration.sql
+│   │   ├── 20250605133406_new_categorys
+│   │   │   └── migration.sql
+│   │   ├── 20250609130725_softdelete_beim_chapter
+│   │   │   └── migration.sql
+│   │   └── migration_lock.toml
+│   └── schema.prisma
+├── README.md
+├── src
+│   ├── application
+│   │   ├── application.controller.ts
+│   │   ├── application.module.ts
+│   │   ├── application.service.ts
+│   │   └── dto
+│   │       ├── create-application.dto.ts
+│   │       ├── index.ts
+│   │       └── rejection.dto.ts
+│   ├── app.module.ts
+│   ├── auth
+│   │   ├── auth.controller.ts
+│   │   ├── auth.module.ts
+│   │   ├── auth.service.ts
+│   │   ├── auth.spec.ts
+│   │   ├── dto
+│   │   │   ├── auth.base.dto.ts
+│   │   │   ├── auth.login.dto.ts
+│   │   │   ├── auth.register.dto.ts
+│   │   │   ├── auth.response.dto.ts
+│   │   │   ├── auth.update.dto.ts
+│   │   │   └── index.ts
+│   │   ├── frontend verifizierung.md
+│   │   ├── strategies
+│   │   │   ├── access.strategie.ts
+│   │   │   ├── index.ts
+│   │   │   └── refesh.stategie.ts
+│   │   ├── types
+│   │   │   └── token.type.ts
+│   │   └── utils
+│   │       └── password.utils.ts
+│   ├── chapter
+│   │   ├── chapter.module.ts
+│   │   └── chapter.service.ts
+│   ├── cloudinary
+│   │   ├── cloudinary.controller.ts
+│   │   ├── cloudinary.module.ts
+│   │   └── cloudinary.service.ts
+│   ├── comment
+│   │   ├── comment.controller.ts
+│   │   ├── comment.module.ts
+│   │   ├── comment.service.ts
+│   │   └── dto
+│   │       ├── comment.dto.ts
+│   │       ├── getComment-query.dto.ts
+│   │       ├── index.ts
+│   │       └── userComment-query.dto.ts
+│   ├── comment-rating
+│   │   ├── comment-rating.controller.ts
+│   │   ├── comment-rating.module.ts
+│   │   └── comment-rating.service.ts
+│   ├── common
+│   │   ├── decorators
+│   │   │   ├── birthdate.validator.ts
+│   │   │   ├── get-current-user.decorator.ts
+│   │   │   ├── index.ts
+│   │   │   ├── password.strengh.validator.ts
+│   │   │   ├── public.decorator.ts
+│   │   │   ├── roles.decorator.ts
+│   │   │   └── tempMail.validator.ts
+│   │   ├── filter
+│   │   │   ├── jwt-exception.filter.ts
+│   │   │   └── Multer-excetion.filter.ts
+│   │   ├── guards
+│   │   │   ├── at.guard.ts
+│   │   │   ├── index.ts
+│   │   │   ├── roles.guard.ts
+│   │   │   └── rt.guard.ts
+│   │   ├── helper
+│   │   │   └── dates.helper.ts
+│   │   ├── interceptors
+│   │   │   └── file-upload.interceptor.ts
+│   │   ├── pipes
+│   │   │   ├── sanitize.pipe.ts
+│   │   │   └── trim.pipe.ts
+│   │   └── utilitys
+│   │       ├── base-prisma.service.ts
+│   │       └── promise-limiter.ts
+│   ├── data
+│   │   └── tempMails.json
+│   ├── friend
+│   │   ├── friend.controller.ts
+│   │   ├── friend.module.ts
+│   │   └── friend.service.ts
+│   ├── history
+│   │   ├── history.controller.ts
+│   │   ├── history.module.ts
+│   │   └── history.service.ts
+│   ├── mail
+│   │   ├── email.types.ts
+│   │   ├── mail.helper.ts
+│   │   ├── mail.module.ts
+│   │   ├── mail.service.ts
+│   │   └── templates
+│   │       ├── application-accepted.hbs
+│   │       ├── application-blocked.hbs
+│   │       ├── application-rejected.hbs
+│   │       ├── application-unblocked.hbs
+│   │       ├── create-admin.hbs
+│   │       ├── default.hbs
+│   │       ├── email-verification.hbs
+│   │       └── password-reset.hbs
+│   ├── main.ts
+│   ├── post
+│   │   ├── dto
+│   │   │   ├── create-chapter.dto.ts
+│   │   │   ├── create.post.dto.ts
+│   │   │   ├── create-quiz-answer.dto.ts
+│   │   │   ├── create-quiz.dto.ts
+│   │   │   ├── create-quiz-question.dto.ts
+│   │   │   ├── delete-reason.dto.ts
+│   │   │   ├── index.ts
+│   │   │   ├── page.post.dto.ts
+│   │   │   ├── post-filter.dto.ts
+│   │   │   ├── update-chapter.dto.ts
+│   │   │   └── update.post.dto.ts
+│   │   ├── post.controller.ts
+│   │   ├── post.module.ts
+│   │   └── post.service.ts
+│   ├── prisma
+│   │   ├── prisma.module.ts
+│   │   ├── prisma.service.spec.ts
+│   │   └── prisma.service.ts
+│   ├── quiz
+│   │   ├── quiz.module.ts
+│   │   └── quiz.service.ts
+│   ├── rating
+│   │   ├── rating.controller.ts
+│   │   ├── rating.module.ts
+│   │   └── rating.service.ts
+│   ├── ticket
+│   │   ├── dto
+│   │   │   ├── create.ticket.dto.ts
+│   │   │   ├── getTicket.query.dto.ts
+│   │   │   ├── index.ts
+│   │   │   └── ticketMessage.dto.ts
+│   │   ├── ticket.controller.ts
+│   │   ├── ticket.module.ts
+│   │   └── ticket.service.ts
+│   └── user
+│       ├── dto
+│       │   ├── deleteAccount.dto.ts
+│       │   ├── index.ts
+│       │   ├── updateMe.dto.ts
+│       │   ├── updatepassword.dto.ts
+│       │   └── updateUser.dto.ts
+│       ├── user.controller.ts
+│       ├── user.module.ts
+│       ├── user.service.ts
+│       └── user.spec.ts
+├── tsconfig.build.json
+└── tsconfig.json
+
+66 directories, 160 files
