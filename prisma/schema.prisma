@@ -282,6 +282,8 @@ model Chapter {
   image          String?
   publicId_image String? // notwendig zum löschen
 
+  isDeleted Boolean @default(false) // wenn das Kapitel gelöscht wird, dann wird es hier auf true gesetzt
+
   // post relation
   postId String @db.Uuid
   post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade) // hier wird dann eingetragen zu welchem Post das Kapitel gehört

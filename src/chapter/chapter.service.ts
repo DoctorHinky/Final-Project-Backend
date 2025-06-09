@@ -125,16 +125,39 @@ export class ChapterService extends BasePrismaService {
     });
     return updatedChapter;
   }
-}
-/*
-deleteChapter() {
-  // per Id sollte dann hier der Inhalt gelöscht werden
-  return 'deleteChapter';
-}
+  async deleteChapter(chapterId: string, tx?: Prisma.TransactionClient) {
+    const prisma = this.getPrisma(tx);
 
-// es wird keine restore Funktion geben da ich nur den Softdelete mache damit man nichts illegales löschen kann
+    const chapter = await prisma.chapter.findUnique({
+      where: { id: chapterId },
+    });
 
-removeChapterFromPost() {
-  // per Id sollte dann hier der Inhalt gelöscht werden
-  return 'removeChapterFromPost';
-} */
+    if (!chapter) throw new NotFoundException('Chapter not found');
+
+    await prisma.chapter.update({
+      where: { id: chapterId },
+      data: {
+        isDeleted: true,
+      },
+    });
+    return 'deleteChapter';
+  }
+
+  async restoreChapter(chapterId: string, tx?: Prisma.TransactionClient) {
+    const prisma = this.getPrisma(tx);
+
+    const chapter = await prisma.chapter.findUnique({
+      where: { id: chapterId },
+    });
+
+    if (!chapter) throw new NotFoundException('Chapter not found');
+
+    await prisma.chapter.update({
+      where: { id: chapterId },
+      data: {
+        isDeleted: false,
+      },
+    });
+    return 'restoreChapter';
+  }
+}

@@ -128,7 +128,10 @@ export class PostService {
         };
       }
 
-      console.log('whereClause', whereClause);
+      const chapterInclude =
+        role === UserRoles.ADMIN || role === UserRoles.MODERATOR
+          ? {}
+          : { where: { isDeleted: false } };
 
       const post = await this.prisma.post.findFirst({
         where: whereClause,
@@ -139,6 +142,7 @@ export class PostService {
             },
           },
           chapters: {
+            ...chapterInclude,
             select: {
               id: true,
               title: true,
@@ -207,7 +211,7 @@ export class PostService {
     const posts = await this.prisma.post.findMany({
       where: query,
       include: {
-        chapters: true,
+        chapters: { where: { isDeleted: false } },
         quiz: true,
       },
     });
@@ -240,7 +244,7 @@ export class PostService {
         posts = await this.prisma.post.findMany({
           where: { authorId, published: false },
           include: {
-            chapters: true,
+            chapters: { where: { isDeleted: false } },
             quiz: true,
           },
         });
@@ -248,7 +252,7 @@ export class PostService {
         posts = await this.prisma.post.findMany({
           where: { authorId, published: true },
           include: {
-            chapters: true,
+            chapters: { where: { isDeleted: false } },
             quiz: true,
           },
         });
@@ -908,6 +912,38 @@ export class PostService {
     return {
       message: 'Chapter updated',
       data: newChapter,
+    };
+  }
+
+  async deleteChapter(
+    user: { id: string; roles: UserRoles },
+    postId: string,
+    chapterId: string,
+  ) {
+    const post = await this.prisma.post.findUnique({
+      where: { id: postId },
+      select: { authorId: true, published: true },
+    });
+
+    if (!post) {
+      throw new NotFoundException('Post not found');
+    }
+
+    if (post.authorId !== user.id && user.roles !== UserRoles.ADMIN) {
+      throw new ForbiddenException('You are not the author of this post');
+    }
+
+    if (user.roles === UserRoles.ADMIN || user.roles === UserRoles.MODERATOR) {
+      await this.prisma.post.update({
+        where: { id: postId },
+        data: { moderatorId: user.id, published: false, publishedAt: null },
+      });
+    }
+
+    await this.chapterService.deleteChapter(chapterId);
+
+    return {
+      message: 'Chapter deleted',
     };
   }
 

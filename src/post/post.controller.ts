@@ -186,6 +186,16 @@ export class PostController {
     );
   }
 
+  @Delete('removeChapter/:postId/:chapterId')
+  @RequiredRoles(UserRoles.AUTHOR, UserRoles.ADMIN, UserRoles.MODERATOR)
+  async removeChapter(
+    @getCurrentUser() user: { id: string; roles: UserRoles },
+    @Param('postId') postId: string,
+    @Param('chapterId') chapterId: string,
+  ) {
+    return await this.PostService.deleteChapter(user, postId, chapterId);
+  }
+
   @Patch('addChapterImage/:postId/:chapterId')
   @RequiredRoles(UserRoles.AUTHOR, UserRoles.ADMIN, UserRoles.MODERATOR)
   @UseInterceptors(
