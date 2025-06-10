@@ -64,11 +64,7 @@ export class ChapterService extends BasePrismaService {
     }
   }
 
-  async updateChapter(
-    chapterId: string,
-    data: UpdateChapterDto,
-    file?: Express.Multer.File,
-  ) {
+  async updateChapter(chapterId: string, data: UpdateChapterDto) {
     const prisma = this.getPrisma();
     try {
       const chapter = await prisma.chapter.findUnique({
@@ -78,21 +74,12 @@ export class ChapterService extends BasePrismaService {
       if (!chapter) {
         throw new NotFoundException('Chapter not found');
       }
-      if (file) {
-        const image = await this.CloudinaryService.uploadFile(file);
-        if (chapter.publicId_image) {
-          await this.CloudinaryService.deleteFile(chapter.publicId_image);
-        }
-        data.image = image.secure_url;
-        data.publicId_image = image.public_id;
-      }
 
       const updatedChapter = await prisma.chapter.update({
         where: { id: chapterId },
         data: {
-          ...data,
-          image: data.image,
-          publicId_image: data.publicId_image,
+          title: data.title,
+          content: data.content,
         },
       });
       return updatedChapter;
@@ -112,7 +99,10 @@ export class ChapterService extends BasePrismaService {
   ) {
     try {
       const prisma = this.getPrisma(tx);
-      const image = await this.CloudinaryService.uploadFile(file);
+      const image = await this.CloudinaryService.uploadFile(
+        file,
+        'posts/chapter',
+      );
 
       const updatedChapter = await prisma.chapter.update({
         where: { id: chapterId },

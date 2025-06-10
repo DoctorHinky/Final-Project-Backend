@@ -889,7 +889,7 @@ export class PostService {
 
       let image;
       if (file) {
-        image = await this.cloudinaryService.uploadFile(file, 'posts/chapters');
+        image = await this.cloudinaryService.uploadFile(file, 'posts/chapter');
 
         if (!image || !image.secure_url) {
           throw new BadRequestException('Failed to upload image');
@@ -925,7 +925,6 @@ export class PostService {
     user: { id: string; roles: UserRoles },
     data: UpdateChapterDto,
     chapterId: string,
-    file?: Express.Multer.File,
   ) {
     try {
       const post = await this.prisma.post.findUnique({
@@ -962,8 +961,9 @@ export class PostService {
       const newChapter = await this.chapterService.updateChapter(
         chapterId,
         data,
-        file,
       );
+
+      console.log('updatedChapter', newChapter);
 
       return {
         message: 'Chapter updated',
@@ -1611,16 +1611,22 @@ export class PostService {
           publicId_image: chapter.publicId_image || null,
         };
 
+        console.log('updating chapter', chapter);
+
         await this.updateChapter(postId, user, clean, chapter.id); // ggf. File matchen
       } else {
         const file = files.find(
           (f) => f.fieldname === `chapterImage_${chapter.index}`,
         );
 
+        console.log('adding chapter', chapter);
+
         const clean = {
           id: chapter.id,
           title: chapter.title,
           content: chapter.content,
+          image: chapter.image || null,
+          publicId_image: chapter.publicId_image || null,
         };
 
         await this.addChapter(postId, user.id, clean, file);

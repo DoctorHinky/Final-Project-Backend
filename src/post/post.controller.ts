@@ -172,18 +172,11 @@ export class PostController {
   )
   async updateChapter(
     @getCurrentUser() user: { id: string; roles: UserRoles },
-    @UploadedFile() file: Express.Multer.File,
     @Body() dto: UpdateChapterDto,
     @Param('postId') postId: string,
     @Param('chapterId') chapterId: string,
   ) {
-    return await this.PostService.updateChapter(
-      postId,
-      user,
-      dto,
-      chapterId,
-      file,
-    );
+    return await this.PostService.updateChapter(postId, user, dto, chapterId);
   }
 
   @Delete('removeChapter/:postId/:chapterId')
@@ -331,6 +324,8 @@ export class PostController {
   ) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument
     const postData = JSON.parse(postDataRaw);
+
+    console.log('data', postData);
 
     return this.PostService.updateFullPost({
       user,
