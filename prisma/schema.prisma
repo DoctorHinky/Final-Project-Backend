@@ -102,6 +102,10 @@ model User {
   TicketMessage TicketMessage[]
   Application   Application[]   @relation("ApplicationMod")
   CommentRating CommentRating[]
+
+  Feedback Feedback[]
+
+  FeedbackResponse FeedbackResponse[]
 }
 
 model EmailVerificationToken {
@@ -494,4 +498,32 @@ model CommentRating {
 
   @@id([commentId, userId]) // composite primary key
   @@unique([commentId, userId])
+}
+
+/* Feedback */
+model Feedback {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String?  @db.Uuid
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  content   String
+  rating    Int      @default(0)
+  allowedToPublish Boolean @default(false)
+  readed Boolean @default(false)
+  
+  responses FeedbackResponse[]
+  
+  createdAt DateTime @default(now())
+  isDeleted Boolean @default(false)
+}
+
+model FeedbackResponse {
+  id         String   @id @default(uuid()) @db.Uuid
+  feedbackId String   @db.Uuid
+  feedback   Feedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+  adminId    String   @db.Uuid
+  admin      User     @relation(fields: [adminId], references: [id])
+  content    String
+  sentViaEmail Boolean @default(false) // ob die Email bereits versendet wurde
+  
+  createdAt DateTime @default(now())
 }

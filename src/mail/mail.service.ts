@@ -150,6 +150,14 @@ export class MailService {
     return this.sendTemplatedEmail(to, 'MAKE_MODS', data, from);
   }
 
+  async sendFeedbackAnswer(
+    to: string,
+    data: { username: string; firstname: string; content: string },
+    from?: string,
+  ) {
+    return this.sendTemplatedEmail(to, 'ANSWER_FEEDBACK', data, from);
+  }
+
   async sendNewsletter(
     recipients: string[],
     subject: string,
