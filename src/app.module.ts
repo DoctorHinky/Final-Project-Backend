@@ -19,6 +19,7 @@ import { FriendModule } from './friend/friend.module';
 import { ApplicationModule } from './application/application.module';
 import { MailModule } from './mail/mail.module';
 import { HistoryModule } from './history/history.module';
+import { FeedbackModule } from './feedback/feedback.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { HistoryModule } from './history/history.module';
     ApplicationModule,
     MailModule,
     HistoryModule,
+    FeedbackModule,
   ],
   providers: [
     { provide: 'APP_GUARD', useClass: AtGuard },

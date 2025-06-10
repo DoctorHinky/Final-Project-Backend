@@ -49,6 +49,12 @@ export interface MakeModsData extends BaseEmailData {
   systemmail: string;
 }
 
+export interface AnswerFeedback extends BaseEmailData {
+  firstname: string;
+  content: string;
+  username: string;
+}
+
 // predefined Email Templates
 export const EMAIL_TEMPLATES = {
   APPLICATION_ACCEPTED: {
@@ -83,6 +89,10 @@ export const EMAIL_TEMPLATES = {
     templateName: 'password-reset',
     subject: 'Reset Your Password',
   },
+  ANSWER_FEEDBACK: {
+    templateName: 'feedback-answer',
+    subject: 'LearnToGrow answered you Feedback',
+  },
 } as const;
 
 // Union Type für alle möglichen E-Mail-Daten
@@ -93,4 +103,5 @@ export type EmailData =
   | WelcomeEmailData
   | EmailVerificationData
   | PasswordResetData
-  | MakeModsData;
+  | MakeModsData
+  | AnswerFeedback;
