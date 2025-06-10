@@ -54,7 +54,10 @@ export class PostService {
       const age = calcAge(user.birthdate);
 
       const whereClause: Prisma.PostWhereInput = {
-        OR: [{ published: true }, { published: false, authorId: userId }],
+        OR: [
+          { published: true },
+          { published: false, authorId: userId, isDeleted: false },
+        ],
         ageRestriction: { lte: age },
       };
 
@@ -123,8 +126,13 @@ export class PostService {
       } else {
         whereClause = {
           OR: [
-            { published: true, id: postId },
-            { published: false, authorId: userId, id: postId },
+            { published: true, id: postId, isDeleted: false },
+            {
+              published: false,
+              authorId: userId,
+              id: postId,
+              isDeleted: false,
+            },
           ],
         };
       }
@@ -251,7 +259,7 @@ export class PostService {
         });
       } else if (userId === authorId && published === 'false') {
         posts = await this.prisma.post.findMany({
-          where: { authorId, published: false },
+          where: { authorId, published: false, isDeleted: false },
           include: {
             chapters: { where: { isDeleted: false } },
             quiz: {
@@ -267,7 +275,7 @@ export class PostService {
         });
       } else {
         posts = await this.prisma.post.findMany({
-          where: { authorId, published: true },
+          where: { authorId, published: true, isDeleted: false },
           include: {
             chapters: { where: { isDeleted: false } },
             quiz: {
