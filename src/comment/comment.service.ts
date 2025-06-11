@@ -10,6 +10,7 @@ import {
 import { UserRoles } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { GetCommentsQueryDto } from './dto';
+import { NotificationService } from 'src/notification/notification.service';
 
 type selectedComment = {
   id: string;
@@ -29,7 +30,10 @@ type CommentWithReplies = CommentWithUser & {
 };
 @Injectable()
 export class CommentService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly notificationService: NotificationService,
+  ) {}
 
   async allCommentsOfPost(postId: string, query?: GetCommentsQueryDto) {
     try {
@@ -156,9 +160,9 @@ export class CommentService {
     };
     return topLevelComments.map((comment) => attachReplies(comment));
   }
-
+  /* WIE ES FUNKTIONIERT - BEISPIEL: */
   /*
-WIE ES FUNKTIONIERT - BEISPIEL:
+
 
 Angenommen wir haben diese Kommentar-Struktur:
 - Kommentar A (Top-Level)
@@ -303,7 +307,9 @@ ERGEBNIS:
 
   async createComment(userId: string, postId: string, content: string) {
     try {
-      const post = await this.prisma.post.findUnique({ where: { id: postId } });
+      const post = await this.prisma.post.findUnique({
+        where: { id: postId },
+      });
       if (!post) throw new NotFoundException('Post not found');
 
       const comment = await this.prisma.comment.create({
@@ -313,6 +319,19 @@ ERGEBNIS:
           postId,
         },
       });
+
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { username: true },
+      });
+
+      if (post.authorId !== null && user) {
+        await this.notificationService.createNotification(
+          post.authorId,
+          'COMMENT',
+          `${user.username} hat deinen Post kommentiert`,
+        );
+      }
 
       return comment;
     } catch (err) {
@@ -338,6 +357,19 @@ ERGEBNIS:
           parentId: comment.id, // Link to the original comment
         },
       });
+
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { username: true },
+      });
+
+      if (user && user.username) {
+        await this.notificationService.createNotification(
+          comment.userId,
+          'COMMENT',
+          `${user.username} hat auf deinen Kommentar geantwortet`,
+        );
+      }
 
       return answer;
     } catch (err) {

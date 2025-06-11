@@ -543,8 +543,8 @@ model FeedbackResponse {
 enum NotificationType {
   FRIEND_REQUEST // Freundschaftsanfrage
   FRIENDSHIP_ACCEPTED // Freundschaft angenommen
-  COMMENT_REPLY // Antwort auf Kommentar
-  NEW_MESSAGE // Neue Nachricht im Ticket
+  COMMENT // Antwort auf Kommentar / Kommentar auf Post
+  NEW_MESSAGE // Neue Nachricht mit freunden etc 
   APPLICATION_STATUS_CHANGE // Statusänderung der Bewerbung
   TICKET_UPDATE // status, neue Nachricht im Ticket
   SYSTEM // alles was admins machen etc

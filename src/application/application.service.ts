@@ -20,6 +20,7 @@ import {
 } from '@prisma/client';
 import { MailService } from 'src/mail/mail.service';
 import { limitConcurrency } from 'src/common/utilitys/promise-limiter';
+import { NotificationService } from 'src/notification/notification.service';
 
 @Injectable()
 export class ApplicationService {
@@ -27,6 +28,7 @@ export class ApplicationService {
     private prisma: PrismaService,
     private cloudinary: CloudinaryService,
     private readonly mailService: MailService,
+    private notificationService: NotificationService,
   ) {}
 
   async sendApplication(
@@ -307,9 +309,7 @@ export class ApplicationService {
         },
       });
 
-      if (!application) {
-        throw new NotFoundException('Application not found');
-      }
+      if (!application) throw new NotFoundException('Application not found');
 
       if (application.status !== ApplicationStatus.IN_PROGRESS) {
         throw new BadRequestException(
@@ -342,6 +342,12 @@ export class ApplicationService {
         include: { referenceDocument: true },
       });
 
+      await this.notificationService.createNotification(
+        application.userId,
+        'APPLICATION_STATUS_CHANGE',
+        `Your application has been accepted, you get more information via email.`,
+      );
+
       if (otherApplications.length > 0) {
         // mapping of promises to delete other applications
         const deletionTasks = otherApplications.map(
@@ -360,34 +366,6 @@ export class ApplicationService {
           authorizedAt: new Date(),
         },
       });
-      console.log(
-        'name: ',
-        application.user!.firstname,
-        application.user!.lastname,
-      );
-
-      // hier muss dann die mail versedent werden
-      console.log(process.env.TERMS_OF_USE_URL);
-
-      /* await this.mailService.sendMail(
-        application.email,
-        `Welcome to the Author Community`,
-        `<p>Dear ${application.user!.firstname} ${application.user!.lastname},</p>
-      
-        <p>We are pleased to inform you that your application to join our Author Community has been accepted. Congratulations and welcome aboard!</p>
-      
-        <p>We're excited to see your contributions and look forward to your unique perspective enriching our platform. Your voice matters here.</p>
-      
-        <p><strong>Please note:</strong><br>
-        By publishing your first article, you agree to our platform's <a href="${process.env.TERMS_OF_USE_URL}">Terms of Use</a>. These terms grant us the right to moderate content to ensure it aligns with our community standards and legal guidelines.</p>
-      
-        <p>We do not tolerate illegal, harmful, or inappropriate content. For full details on what is permitted and how moderation is handled, please refer to our <a href="[LINK_ZU_DEN_BEDINGUNGEN]">Terms and Conditions</a>.</p>
-      
-        <p>If you have any questions or need assistance, feel free to reach out to our support team at any time.</p>
-      
-        <p>Best regards,<br>
-        Your LearnToGrow Team</p>`,
-      ); */
 
       await this.mailService.sendApplicationAcceptedEmail(application.email, {
         firstname: application.user!.firstname,
@@ -476,6 +454,14 @@ export class ApplicationService {
           modId: userId,
         },
       });
+
+      if (application.userId !== null) {
+        await this.notificationService.createNotification(
+          application.userId,
+          'APPLICATION_STATUS_CHANGE',
+          `Your application has been rejected, you get more information via email`,
+        );
+      }
 
       // Send rejection email
       await this.mailService.sendApplicationRejectedEmail(application.email, {
@@ -581,6 +567,12 @@ export class ApplicationService {
         reason,
       });
 
+      await this.notificationService.createNotification(
+        target.id,
+        'APPLICATION_STATUS_CHANGE',
+        `You have been blocked from sending applications, you get more information via email.`,
+      );
+
       return {
         message: 'User has been blocked from sending applications',
         data: {
@@ -630,6 +622,12 @@ export class ApplicationService {
         },
       );
 
+      await this.notificationService.createNotification(
+        updatedUser.id,
+        'APPLICATION_STATUS_CHANGE',
+        `You have been unblocked from sending applications.`,
+      );
+
       return {
         message: 'User has been unblocked from sending applications',
         data: updatedUser,
@@ -647,10 +645,8 @@ export class ApplicationService {
 
   async cleanupApplications() {
     const now = new Date();
-    // const halfYear = 6 * 30 * 24 * 60 * 60 * 1000;
-    // const oneWeek = 7 * 24 * 60 * 60 * 1000;
-    const halfYear = 1000; // Für Testumgebung
-    const oneWeek = 1000;
+    const halfYear = 6 * 30 * 24 * 60 * 60 * 1000;
+    const oneWeek = 7 * 24 * 60 * 60 * 1000;
 
     let deletions = 0;
     const queries = [

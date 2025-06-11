@@ -1601,6 +1601,8 @@ export class PostService {
           forKids: data.forKids,
           ageRestriction: data.ageRestriction,
           category: data.category,
+          tags: data.tags,
+          published: data.published,
         },
         files.find((f) => f.fieldname === 'image'),
       );
