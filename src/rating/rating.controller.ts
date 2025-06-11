@@ -1,4 +1,4 @@
-import { Controller, Param, Post } from '@nestjs/common';
+import { Controller, Get, Param, Post } from '@nestjs/common';
 import { getCurrentUser } from 'src/common/decorators';
 import { RatingService } from './rating.service';
 
@@ -20,5 +20,15 @@ export class RatingController {
     @Param('postId') postId: string,
   ) {
     return await this.ratingService.setRating(userId, postId, -1);
+  }
+
+  @Get('rating/:postId')
+  async getPostRating(@Param('postId') postId: string) {
+    return await this.ratingService.getRating(postId);
+  }
+
+  @Get('top')
+  async getTopRatedPosts() {
+    return await this.ratingService.getTopRatedPosts();
   }
 }

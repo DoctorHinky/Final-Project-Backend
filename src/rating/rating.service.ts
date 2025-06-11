@@ -84,12 +84,27 @@ export class RatingService {
     return { postId, likes, dislikes };
   }
 
-  async getTopRatedPosts(limit: number) {
+  async getTopRatedPosts(limit: number = 10, page: number = 1) {
+    if (limit < 1 || page < 1) {
+      throw new ForbiddenException('Limit and page must be greater than 0');
+    }
+    if (limit > 100) {
+      throw new ForbiddenException('Limit cannot exceed 100');
+    }
+    const skip = (page - 1) * limit;
+
     const results = await this.prisma.rating.groupBy({
       by: ['postId'],
       _sum: { value: true },
       orderBy: { _sum: { value: 'desc' } },
       take: limit,
+      skip: skip,
+      where: {
+        post: {
+          published: true,
+          isDeleted: false,
+        },
+      },
     });
 
     return results.map((r) => ({
