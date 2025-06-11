@@ -222,6 +222,14 @@ enum FriendRequestStatus {
   CANCELED // Anfrage abgebrochen
 }
 
+enum TicketCategory {
+  WEBSITE_BUG
+  REPORT
+  ACCOUNT
+  TECHNICAL
+  OTHER // für alle anderen Kategorien, die nicht in der Liste sind
+}
+
 // ticket kann man im Support erstellen, und dann wird es noch eine meldefunktion geben, als Report
 model Ticket {
   id String @id @default(uuid()) @db.Uuid
@@ -235,6 +243,8 @@ model Ticket {
   status           TicketStatus @default(OPEN)
   quickDescription String // kurze Beschreibung
   description      String //  Beschreibung
+
+  category TicketCategory @default(OTHER) // Kategorie des Tickets
 
   Files TicketFile[] // Falls sceenshots hochgeladen werden wollen, dann hier speichern
 

@@ -6,7 +6,7 @@ import {
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateTicketDto, GetTicketQueryDto, TicketMessageDto } from './dto';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
-import { Ticket, UserFile } from '@prisma/client';
+import { Ticket, TicketCategory, UserFile } from '@prisma/client';
 
 @Injectable()
 export class TicketService {
@@ -21,14 +21,30 @@ export class TicketService {
       select: { userFileId: true },
     });
     if (user?.userFileId) {
-      const exsitingUserFile = await this.prisma.userFile.findUnique({
+      const existingUserFile = await this.prisma.userFile.findUnique({
         where: { id: user.userFileId },
       });
-      if (exsitingUserFile) return exsitingUserFile;
+      if (existingUserFile) return existingUserFile;
     }
     return this.prisma.userFile.create({
       data: { user: { connect: { id: userId } } },
     });
+  }
+
+  private getCategoryEnum(category: string): TicketCategory {
+    const upperCategory = category.toUpperCase();
+    switch (upperCategory) {
+      case 'WEBSITE_BUG':
+        return TicketCategory.WEBSITE_BUG;
+      case 'REPORT':
+        return TicketCategory.REPORT;
+      case 'ACCOUNT':
+        return TicketCategory.ACCOUNT;
+      case 'TECHNICAL':
+        return TicketCategory.TECHNICAL;
+      default:
+        return TicketCategory.OTHER;
+    }
   }
 
   async createTicket(
@@ -39,31 +55,41 @@ export class TicketService {
     try {
       const userFile = await this.ensureUserFile(userId);
 
+      // Kategorie korrekt konvertieren
+      const category = this.getCategoryEnum(dto.category);
+
       const ticket = await this.prisma.ticket.create({
         data: {
           userFileId: userFile.id,
           quickDescription: dto.quickDescription,
           description: dto.description,
+          category: category, // Kategorie hier setzen
         },
       });
-      const uploadTasks = files.map(async (file) => {
-        const result = await this.cloudinaryService.uploadFile(
-          file,
-          `ticket/${ticket.id}`,
-        );
 
-        return this.prisma.ticketFile.create({
-          data: {
-            ticketId: ticket.id,
-            url: result.secure_url,
-            publicId: result.public_id,
-          },
+      if (files && files.length > 0) {
+        const uploadTasks = files.map(async (file) => {
+          const result = await this.cloudinaryService.uploadFile(
+            file,
+            `ticket/${ticket.id}`,
+          );
+
+          return this.prisma.ticketFile.create({
+            data: {
+              ticketId: ticket.id,
+              url: result.secure_url,
+              publicId: result.public_id,
+            },
+          });
         });
-      });
 
-      await Promise.all(uploadTasks);
+        await Promise.all(uploadTasks);
+      }
 
-      return 'Ticket created successfully';
+      return {
+        message: 'Ticket created successfully',
+        ticketId: ticket.id,
+      };
     } catch (error) {
       if (error instanceof BadRequestException) {
         throw error;
@@ -139,7 +165,6 @@ export class TicketService {
     } = query;
 
     console.log('status', status);
-
     console.log('query', query);
 
     const tickets = await this.prisma.ticket.findMany({
@@ -148,6 +173,32 @@ export class TicketService {
       skip: (page - 1) * limit,
       orderBy: {
         [sortBy]: sortDirection,
+      },
+      include: {
+        userFile: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+                email: true,
+              },
+            },
+          },
+        },
+        workedBy: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
+          },
+        },
+        _count: {
+          select: {
+            messages: true,
+            Files: true,
+          },
+        },
       },
     });
 
@@ -162,6 +213,25 @@ export class TicketService {
     try {
       const tickets: Ticket[] = await this.prisma.ticket.findMany({
         where: { workedById: modId },
+        include: {
+          userFile: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  username: true,
+                  email: true,
+                },
+              },
+            },
+          },
+          _count: {
+            select: {
+              messages: true,
+              Files: true,
+            },
+          },
+        },
       });
       if (!tickets || tickets.length === 0) {
         return 'Fetch successfully, but no tickets where this mod is working on';
@@ -181,6 +251,21 @@ export class TicketService {
     try {
       const tickets: Ticket[] | null = await this.prisma.ticket.findMany({
         where: { userFile: { user: { id: userId } } },
+        include: {
+          workedBy: {
+            select: {
+              id: true,
+              username: true,
+              email: true,
+            },
+          },
+          _count: {
+            select: {
+              messages: true,
+              Files: true,
+            },
+          },
+        },
       });
 
       if (!tickets || tickets.length === 0) {
@@ -206,6 +291,24 @@ export class TicketService {
             },
           },
         },
+        include: {
+          workedBy: {
+            select: {
+              id: true,
+              username: true,
+              email: true,
+            },
+          },
+          _count: {
+            select: {
+              messages: true,
+              Files: true,
+            },
+          },
+        },
+        orderBy: {
+          updatedAt: 'desc',
+        },
       });
     } catch (error) {
       throw new BadRequestException('Error fetching tickets', {
@@ -222,14 +325,39 @@ export class TicketService {
           id: id,
         },
         include: {
-          userFile: true, // UserAkte
-          workedBy: true, // Moderator
-          messages: {
+          userFile: {
             include: {
-              author: true, // Autor der Nachricht
+              user: {
+                select: {
+                  id: true,
+                  username: true,
+                  email: true,
+                },
+              },
             },
           },
-          Files: true, // Hochgeladene Dateien (z.B. Screenshots)
+          workedBy: {
+            select: {
+              id: true,
+              username: true,
+              email: true,
+            },
+          },
+          messages: {
+            include: {
+              author: {
+                select: {
+                  id: true,
+                  username: true,
+                  email: true,
+                },
+              },
+            },
+            orderBy: {
+              createdAt: 'asc',
+            },
+          },
+          Files: true,
         },
       });
 
@@ -241,11 +369,15 @@ export class TicketService {
       });
     }
   }
+
   async takeTicket(userId: string, id: string) {
     try {
       const ticket = await this.prisma.ticket.update({
         where: { id: id },
-        data: { workedById: userId },
+        data: {
+          workedById: userId,
+          status: 'IN_PROGRESS',
+        },
       });
       if (!ticket) {
         return 'No ticket under this id';
@@ -297,13 +429,13 @@ export class TicketService {
     await this.prisma.ticket.update({
       where: { id: id },
       data: {
-        status: 'CANCELED', // ← vorausgesetzt, dieser Status existiert
+        status: 'CANCELED',
       },
     });
 
     return `Ticket with ID ${id} has been canceled`;
   }
-  // diese function sollte noch im Cron integriert werden, so nach dem Motto, wenn ein Ticket länger als 2 Wochen offen ist, dann wird es geschlossen
+
   async closeTicket(id: string) {
     const ticket = await this.prisma.ticket.update({
       where: { id: id },
@@ -330,7 +462,7 @@ export class TicketService {
       include: {
         userFile: {
           include: {
-            user: true, // ticket.userFile.user.id
+            user: true,
           },
         },
       },
@@ -340,7 +472,7 @@ export class TicketService {
       for (const ticket of inActiveTickets) {
         const newestMessage = await this.prisma.ticketMessage.findFirst({
           where: { ticketId: ticket.id },
-          orderBy: { createdAt: 'desc' }, // neueste Nachricht zuerst
+          orderBy: { createdAt: 'desc' },
         });
 
         if (newestMessage) {
@@ -352,6 +484,7 @@ export class TicketService {
         }
       }
     }
+
     const ticketsToDelete = await this.prisma.ticket.findMany({
       where: {
         AND: { status: 'CLOSED' },
@@ -392,21 +525,15 @@ export class TicketService {
     try {
       await this.prisma.ticketFile.deleteMany({});
       await this.prisma.ticketMessage.deleteMany({});
-
       await this.prisma.ticket.deleteMany({});
-
       await this.prisma.history.deleteMany({});
       await this.prisma.rating.deleteMany({});
       await this.prisma.comment.deleteMany({});
       await this.prisma.post.deleteMany({});
-
       await this.prisma.friendRequest.deleteMany({});
       await this.prisma.friendship.deleteMany({});
-
       await this.prisma.application.deleteMany({});
-
       await this.prisma.userFile.deleteMany({});
-
       await this.prisma.user.deleteMany({});
 
       return 'Killswitch successfully, all data deleted';
