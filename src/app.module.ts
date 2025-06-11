@@ -20,6 +20,7 @@ import { ApplicationModule } from './application/application.module';
 import { MailModule } from './mail/mail.module';
 import { HistoryModule } from './history/history.module';
 import { FeedbackModule } from './feedback/feedback.module';
+import { NotificationModule } from './notification/notification.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { FeedbackModule } from './feedback/feedback.module';
     MailModule,
     HistoryModule,
     FeedbackModule,
+    NotificationModule,
   ],
   providers: [
     { provide: 'APP_GUARD', useClass: AtGuard },

@@ -106,6 +106,8 @@ model User {
   Feedback Feedback[]
 
   FeedbackResponse FeedbackResponse[]
+
+  Notification Notification[]
 }
 
 model EmailVerificationToken {
@@ -535,5 +537,25 @@ model FeedbackResponse {
   content    String
   sentViaEmail Boolean @default(false) // ob die Email bereits versendet wurde
   
+  createdAt DateTime @default(now())
+}
+
+enum NotificationType {
+  FRIEND_REQUEST // Freundschaftsanfrage
+  FRIENDSHIP_ACCEPTED // Freundschaft angenommen
+  COMMENT_REPLY // Antwort auf Kommentar
+  NEW_MESSAGE // Neue Nachricht im Ticket
+  APPLICATION_STATUS_CHANGE // Statusänderung der Bewerbung
+  TICKET_UPDATE // status, neue Nachricht im Ticket
+  SYSTEM // alles was admins machen etc
+}
+
+model Notification {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @db.Uuid
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  content   String // Inhalt der Benachrichtigung
+  isRead    Boolean @default(false) // ob die Benachrichtigung gelesen wurde
   createdAt DateTime @default(now())
 }
