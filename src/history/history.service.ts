@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { limitConcurrency } from 'src/common/utilitys/promise-limiter';
 import { PrismaService } from 'src/prisma/prisma.service';

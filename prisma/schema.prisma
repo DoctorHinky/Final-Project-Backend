@@ -241,7 +241,7 @@ model Ticket {
   updatedAt DateTime @updatedAt
 
   status           TicketStatus @default(OPEN)
-  quickDescription String // kurze Beschreibung
+  title String // kurze Beschreibung
   description      String //  Beschreibung
 
   category TicketCategory @default(OTHER) // Kategorie des Tickets

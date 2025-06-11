@@ -61,7 +61,7 @@ export class TicketService {
       const ticket = await this.prisma.ticket.create({
         data: {
           userFileId: userFile.id,
-          quickDescription: dto.quickDescription,
+          title: dto.title,
           description: dto.description,
           category: category, // Kategorie hier setzen
         },

@@ -4,7 +4,7 @@ import { IsString, Length, MaxLength } from 'class-validator';
 export class CreateTicketDto {
   @IsString()
   @Length(10, 50)
-  quickDescription: string;
+  title: string;
 
   @IsString()
   @Length(25, 500)
