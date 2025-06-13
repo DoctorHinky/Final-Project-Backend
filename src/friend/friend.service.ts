@@ -216,6 +216,7 @@ export class FriendService {
         data: request,
       };
     } catch (err) {
+      console.error('Error sending friend request:', err);
       if (err instanceof HttpException) {
         throw err; // Re-throw the BadRequestException
       }

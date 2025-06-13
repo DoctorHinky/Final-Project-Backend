@@ -21,6 +21,8 @@ import { MailModule } from './mail/mail.module';
 import { HistoryModule } from './history/history.module';
 import { FeedbackModule } from './feedback/feedback.module';
 import { NotificationModule } from './notification/notification.module';
+import { ChatModule } from './chat/chat.module';
+import { ConversationModule } from './conversation/conversation.module';
 
 @Module({
   imports: [
@@ -45,6 +47,8 @@ import { NotificationModule } from './notification/notification.module';
     HistoryModule,
     FeedbackModule,
     NotificationModule,
+    ChatModule,
+    ConversationModule,
   ],
   providers: [
     { provide: 'APP_GUARD', useClass: AtGuard },

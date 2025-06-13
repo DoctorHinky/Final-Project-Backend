@@ -91,30 +91,6 @@ export class CloudinaryService {
       });
     });
   }
-  // Old version, newer is not tested yet
-  /*   async cleanCloudProfileImages() {
-    const dbPicturesId = await this.userService.getPicture();
-    const cloudPictures = await cloudinary.api.resources({
-      type: 'upload',
-      prefix: 'profile_pictures',
-      max_results: 500,
-      resource_type: 'image',
-    }); 
-
-    const cloudPicturesId = cloudPictures.resources.map((pic) => pic.public_id);
-    const picturesToDelete = cloudPicturesId.filter(
-      (pic) => !dbPicturesId.includes(pic),
-    ) as string[];
-
-    if (picturesToDelete.length > 0) {
-      await Promise.all(picturesToDelete.map((pic) => this.deleteFile(pic)));
-    }
-
-    return {
-      message: 'Cloudinary cleaned',
-      deletedPictures: picturesToDelete,
-    };
-  } */
 
   async cleanCloudProfileImages() {
     try {

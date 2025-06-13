@@ -39,6 +39,7 @@
     "class-validator": "^0.14.2",
     "cloudinary": "^2.6.1",
     "cors": "^2.8.5",
+    "crypto": "^1.0.1",
     "dotenv": "^16.5.0",
     "handlebars": "^4.7.8",
     "lodash": "^4.17.21",

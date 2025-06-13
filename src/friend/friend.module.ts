@@ -7,6 +7,7 @@ import { NotificationModule } from 'src/notification/notification.module';
 @Module({
   controllers: [FriendController],
   providers: [FriendService],
+  exports: [FriendService],
   imports: [PrismaModule, NotificationModule],
 })
 export class FriendModule {}

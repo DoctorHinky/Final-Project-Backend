@@ -104,10 +104,14 @@ model User {
   CommentRating CommentRating[]
 
   Feedback Feedback[]
-
   FeedbackResponse FeedbackResponse[]
 
   Notification Notification[]
+
+  ConversationAsUser1 Conversation[] @relation("ConversationUser1")
+  ConversationAsUser2 Conversation[]  @relation("ConversationUser2")
+
+  sentMessages        DirectMessage[] @relation("SentMessages")
 }
 
 model EmailVerificationToken {
@@ -242,9 +246,9 @@ model Ticket {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  status           TicketStatus @default(OPEN)
-  title String // kurze Beschreibung
-  description      String //  Beschreibung
+  status      TicketStatus @default(OPEN)
+  title       String // kurze Beschreibung
+  description String //  Beschreibung
 
   category TicketCategory @default(OTHER) // Kategorie des Tickets
 
@@ -371,7 +375,6 @@ model Quiz {
   id     String @id @default(uuid()) @db.Uuid
   postId String @unique @db.Uuid
   post   Post   @relation("PostQuiz", fields: [postId], references: [id], onDelete: Cascade)
-
 
   // questions
   questions QuizQuestion[]
@@ -512,31 +515,33 @@ model CommentRating {
   @@unique([commentId, userId])
 }
 
-/* Feedback */
+/**
+ * Feedback
+ */
 model Feedback {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String?  @db.Uuid
-  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  content   String
-  rating    Int      @default(0)
+  id               String  @id @default(uuid()) @db.Uuid
+  userId           String? @db.Uuid
+  user             User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  content          String
+  rating           Int     @default(0)
   allowedToPublish Boolean @default(false)
-  readed Boolean @default(false)
-  
+  readed           Boolean @default(false)
+
   responses FeedbackResponse[]
-  
+
   createdAt DateTime @default(now())
-  isDeleted Boolean @default(false)
+  isDeleted Boolean  @default(false)
 }
 
 model FeedbackResponse {
-  id         String   @id @default(uuid()) @db.Uuid
-  feedbackId String   @db.Uuid
-  feedback   Feedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
-  adminId    String   @db.Uuid
-  admin      User     @relation(fields: [adminId], references: [id])
-  content    String
-  sentViaEmail Boolean @default(false) // ob die Email bereits versendet wurde
-  
+  id           String   @id @default(uuid()) @db.Uuid
+  feedbackId   String   @db.Uuid
+  feedback     Feedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+  adminId      String   @db.Uuid
+  admin        User     @relation(fields: [adminId], references: [id])
+  content      String
+  sentViaEmail Boolean  @default(false) // ob die Email bereits versendet wurde
+
   createdAt DateTime @default(now())
 }
 
@@ -551,11 +556,78 @@ enum NotificationType {
 }
 
 model Notification {
-  id         String   @id @default(uuid()) @db.Uuid
-  userId     String   @db.Uuid
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String           @id @default(uuid()) @db.Uuid
+  userId    String           @db.Uuid
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   type      NotificationType
   content   String // Inhalt der Benachrichtigung
-  isRead    Boolean @default(false) // ob die Benachrichtigung gelesen wurde
+  isRead    Boolean          @default(false) // ob die Benachrichtigung gelesen wurde
+  createdAt DateTime         @default(now())
+}
+
+enum MessageType {
+  TEXT
+  FILE
+  COMBINED  
+  SYSTEM // Für Systemnachrichten wie "Freundschaft beendet" etc.
+}
+
+model Conversation {
+  id String @id @default(uuid()) @db.Uuid
+
+  // Die beiden Teilnehmer der Konversation
+  user1Id String @db.Uuid
+  user2Id String @db.Uuid
+
+  user1 User @relation("ConversationUser1", fields: [user1Id], references: [id], onDelete: Cascade)
+  user2 User @relation("ConversationUser2", fields: [user2Id], references: [id], onDelete: Cascade)
+
+
+  // Metadaten
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Letztes Update für Sortierung
+  lastMessageAt DateTime @default(now())
+
+  // Messages in dieser Konversation
+  messages DirectMessage[]
+
+  // Verhindert doppelte Konversationen zwischen denselben Usern
+  @@unique([user1Id, user2Id])
+  @@index([user1Id])
+  @@index([user2Id])
+  @@index([lastMessageAt])
+}
+
+model DirectMessage {
+  id             String       @id @default(uuid()) @db.Uuid
+  conversationId String       @db.Uuid
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  // Sender der Nachricht
+  senderId String @db.Uuid
+  sender   User   @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+
+  // Nachrichteninhalt
+  content String?
+
+  // Optional: Nachrichtentyp für spätere Erweiterungen (Text, Bild, etc.)
+  messageType MessageType @default(TEXT)
+
+  attachmentUrl      String? // Cloudinary URL
+  attachmentPublicId String? // Cloudinary Public ID
+
+  // Status der Nachricht
+  isRead Boolean   @default(false)
+  isDeletedForSender Boolean @default(false)
+  isDeletedForReceiver Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([conversationId])
+  @@index([senderId])
+  @@index([createdAt])
+  @@index([isRead])
 }
