@@ -8,7 +8,7 @@ import { NewMessageDto } from './dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { MessageType } from '@prisma/client';
-import { encrypt } from 'src/common/utilitys/encryptoin';
+import { decrypt, encrypt } from 'src/common/utilitys/encryptoin';
 
 @Injectable()
 export class ChatService {
@@ -22,15 +22,14 @@ export class ChatService {
   private evalType(
     data: NewMessageDto & { file?: Express.Multer.File | undefined },
   ): MessageType {
-    if (data.message && data.file) {
-      return MessageType.COMBINED;
-    } else if (data.message && !data.file) {
-      return MessageType.TEXT;
-    } else if (!data.message && data.file) {
-      return MessageType.FILE;
-    } else {
-      throw new BadRequestException('Message and file cannot both be empty');
-    }
+    const hasText = !!data.message?.trim();
+    const hasFile = !!data.file;
+
+    if (hasText && hasFile) return MessageType.COMBINED;
+    if (hasText) return MessageType.TEXT;
+    if (hasFile) return MessageType.FILE;
+
+    throw new BadRequestException('Message should not be empty');
   }
 
   async sendMessage(
@@ -40,11 +39,9 @@ export class ChatService {
   ) {
     try {
       const { message, file } = data;
-      if (!message && !file) {
-        throw new BadRequestException('Message should not be empty');
-      }
+      const type = this.evalType(data);
 
-      const conversation = await this.prisma.conversation.findUnique({
+      const conversation = await this.prisma.conversation.findFirst({
         where: {
           id: conversationId,
           OR: [{ user1Id: userId }, { user2Id: userId }],
@@ -79,15 +76,22 @@ export class ChatService {
           content: message ? encrypt(message) : null,
           attachmentUrl: fileUrl,
           attachmentPublicId: fileId,
-          messageType: this.evalType(data),
+          messageType: type,
           conversationId,
           senderId: userId,
         },
       });
 
-      console.log('Message sent successfully:', newMsg);
-
-      return { message: 'message createt', data: newMsg };
+      return {
+        message: {
+          id: newMsg.id,
+          content: newMsg.content ? decrypt(newMsg.content) : null,
+          attachmentUrl: newMsg.attachmentUrl ?? null,
+          messageType: newMsg.messageType,
+          conversationId: newMsg.conversationId,
+          senderId: newMsg.senderId,
+        },
+      };
     } catch (error) {
       console.error('Failed to send message:', error);
       if (error instanceof HttpException) {
@@ -107,7 +111,7 @@ export class ChatService {
     data: NewMessageDto & { file?: Express.Multer.File | undefined },
   ) {
     try {
-      const message = await this.prisma.directMessage.findUnique({
+      const message = await this.prisma.directMessage.findFirst({
         where: { id: messageId, senderId: userId },
       });
       if (!message) {
@@ -116,7 +120,6 @@ export class ChatService {
         );
       }
       const type = this.evalType(data);
-
       if (message.content === ChatService.DELETE_MESSAGE) {
         throw new BadRequestException('Cannot update a deleted message');
       }
@@ -179,24 +182,28 @@ export class ChatService {
     try {
       const message = await this.prisma.directMessage.findUnique({
         where: { id: messageId },
+        select: {
+          senderId: true,
+          conversationId: true,
+          attachmentPublicId: true,
+        },
       });
 
       if (!message || !message.conversationId) {
         throw new NotFoundException("couldn't find message");
       }
 
-      const conversation = await this.prisma.conversation.findUnique({
+      const conversation = await this.prisma.conversation.findFirst({
         where: {
           id: message.conversationId,
           OR: [{ user1Id: userId }, { user2Id: userId }],
         },
+        select: { id: true },
       });
 
       if (!conversation) {
         throw new NotFoundException('You are not part of this conversation');
       }
-
-      if (!message) throw new NotFoundException('Message not found');
 
       if (userId === message.senderId) {
         // Der Absender kann die Nachricht löschen
@@ -229,11 +236,14 @@ export class ChatService {
     try {
       const message = await this.prisma.directMessage.findUnique({
         where: { id: messageId },
+        select: { attachmentPublicId: true },
       });
       if (message?.attachmentPublicId) {
         await this.cloudinary.deleteFile(message.attachmentPublicId);
       }
-      return this.prisma.directMessage.delete({ where: { id: messageId } });
+      return await this.prisma.directMessage.delete({
+        where: { id: messageId },
+      });
     } catch (error) {
       console.error('Failed to delete message internally:', error);
       throw error;

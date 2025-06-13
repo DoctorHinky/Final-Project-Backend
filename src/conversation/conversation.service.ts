@@ -20,15 +20,21 @@ export class ConversationService {
   async createConversation(userId: string, targetId: string) {
     try {
       const [user, target] = await Promise.all([
-        this.prisma.user.findUnique({ where: { id: userId } }),
-        this.prisma.user.findUnique({ where: { id: targetId } }),
+        this.prisma.user.findUnique({
+          where: { id: userId },
+          select: { id: true },
+        }),
+        this.prisma.user.findUnique({
+          where: { id: targetId },
+          select: { id: true },
+        }),
       ]);
 
       if (!user || !target) {
         throw new NotFoundException('One or both users not found');
       }
 
-      const isFriend = await this.Friends.isFriendWith(userId, targetId);
+      const isFriend = await this.Friends.isFriendWith(user.id, target.id);
 
       if (isFriend === false) {
         throw new BadRequestException(
@@ -42,6 +48,26 @@ export class ConversationService {
             { user1Id: user.id, user2Id: target.id },
             { user1Id: target.id, user2Id: user.id },
           ],
+        },
+        select: {
+          id: true,
+          user1Id: true,
+          user2Id: true,
+          createdAt: true,
+          updatedAt: true,
+          lastMessageAt: true,
+          messages: {
+            orderBy: { createdAt: 'desc' }, // neue Nachrichten zuletzt
+            select: {
+              id: true,
+              content: true,
+              messageType: true,
+              attachmentUrl: true,
+              isRead: true,
+              createdAt: true,
+              updatedAt: true,
+            },
+          },
         },
       });
 
@@ -72,7 +98,7 @@ export class ConversationService {
 
   async getConversation(conversationId: string, userId: string) {
     try {
-      const conversation = await this.prisma.conversation.findUnique({
+      const conversation = await this.prisma.conversation.findFirst({
         where: {
           id: conversationId,
           OR: [{ user1Id: userId }, { user2Id: userId }],
@@ -90,6 +116,17 @@ export class ConversationService {
             },
             orderBy: { createdAt: 'desc' }, // neue Nachrichten zuletzt
             take: 50, // die letzten 50 Nachrichten
+            select: {
+              id: true,
+              conversationId: true,
+              senderId: true,
+              content: true,
+              messageType: true,
+              attachmentUrl: true,
+              isRead: true,
+              createdAt: true,
+              updatedAt: true,
+            },
           },
           _count: {
             select: { messages: true }, // take 50 begrenzt den Count nicht
@@ -126,6 +163,7 @@ export class ConversationService {
           orderBy: { createdAt: 'desc' },
           skip: 50,
           take: 500, // max 500 Nachrichten löschen
+          select: { id: true },
         });
 
         if (messagesToDelete.length > 0) {
@@ -202,7 +240,7 @@ export class ConversationService {
 
   async deleteConversation(conversationId: string, userId: string) {
     try {
-      const conversation = await this.prisma.conversation.findUnique({
+      const conversation = await this.prisma.conversation.findFirst({
         where: {
           id: conversationId,
           OR: [{ user1Id: userId }, { user2Id: userId }],
