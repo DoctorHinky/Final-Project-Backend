@@ -11,7 +11,7 @@ export class ConversationController {
     @getCurrentUser('id') userId: string,
     @Param('targetId') targetId: string,
   ) {
-    await this.conversationService.createConversation(userId, targetId);
+    return await this.conversationService.createConversation(userId, targetId);
   }
 
   @Get(':conversationId')
@@ -19,12 +19,15 @@ export class ConversationController {
     @getCurrentUser('id') userId: string,
     @Param('conversationId') conversationId: string,
   ) {
-    await this.conversationService.getConversation(conversationId, userId);
+    return await this.conversationService.getConversation(
+      conversationId,
+      userId,
+    );
   }
 
   @Get('loadPreview')
   async loadAllConversations(@getCurrentUser('id') userId: string) {
-    await this.conversationService.getAllConversations(userId);
+    return await this.conversationService.getAllConversations(userId);
   }
 
   @Delete(':conversationId')
@@ -32,6 +35,9 @@ export class ConversationController {
     @Param('conversationId') conversationId: string,
     @getCurrentUser('id') userId: string,
   ) {
-    await this.conversationService.deleteConversation(conversationId, userId);
+    return await this.conversationService.deleteConversation(
+      conversationId,
+      userId,
+    );
   }
 }

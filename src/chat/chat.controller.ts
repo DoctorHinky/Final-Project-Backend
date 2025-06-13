@@ -31,7 +31,7 @@ export class ChatController {
     @Body() dto: NewMessageDto,
     @UploadedFile() file: Express.Multer.File | undefined,
   ) {
-    await this.chatService.sendMessage(chatId, userId, { ...dto, file });
+    return await this.chatService.sendMessage(chatId, userId, { ...dto, file });
   }
 
   @Patch('update/:messageId')
@@ -47,7 +47,10 @@ export class ChatController {
     @Body() dto: NewMessageDto,
     @UploadedFile() file: Express.Multer.File | undefined,
   ) {
-    await this.chatService.updateMessage(userId, msgId, { ...dto, file });
+    return await this.chatService.updateMessage(userId, msgId, {
+      ...dto,
+      file,
+    });
   }
 
   @Delete(':msgId')
@@ -55,6 +58,6 @@ export class ChatController {
     @getCurrentUser('id') userId: string,
     @Param('msgId') msgId: string,
   ) {
-    await this.chatService.deleteMessage(userId, msgId);
+    return await this.chatService.deleteMessage(userId, msgId);
   }
 }
