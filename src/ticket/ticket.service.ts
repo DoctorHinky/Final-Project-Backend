@@ -6,7 +6,7 @@ import {
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateTicketDto, GetTicketQueryDto, TicketMessageDto } from './dto';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
-import { Ticket, TicketCategory, UserFile } from '@prisma/client';
+import { Ticket, TicketCategory, TicketStatus, UserFile } from '@prisma/client';
 import { NotificationService } from 'src/notification/notification.service';
 
 @Injectable()
@@ -231,6 +231,8 @@ export class TicketService {
         },
       });
 
+      console.log('Tickets fetched:', tickets);
+
       if (!tickets || tickets.length === 0) {
         return 'Fetch successfully, but no tickets found';
       } else {
@@ -431,6 +433,43 @@ export class TicketService {
     }
   }
 
+  async reopenTicket(userId: string, id: string) {
+    try {
+      const ticket = await this.prisma.ticket.findUnique({
+        where: { id: id },
+        include: { userFile: { include: { user: true } } },
+      });
+
+      if (!ticket || !ticket.userFile?.user) {
+        throw new BadRequestException('cant load ticket or userFile or user');
+      }
+
+      if (ticket.workedById && userId !== ticket.workedById) {
+        await this.NotificationService.createNotification(
+          ticket.workedById,
+          'SYSTEM',
+          `The ticket with ID ${id} has been reopend, check out to find reason.`,
+        );
+      }
+      const newStatus =
+        ticket.workedById !== null
+          ? TicketStatus.IN_PROGRESS
+          : TicketStatus.OPEN;
+
+      await this.prisma.ticket.update({
+        where: { id: id },
+        data: {
+          status: newStatus,
+        },
+      });
+    } catch (error) {
+      throw new BadRequestException('Error reopening ticket', {
+        cause: error,
+        description: 'An error occurred while reopening the ticket',
+      });
+    }
+  }
+
   async reassignTicket(userId: string, id: string) {
     try {
       const ticket = await this.prisma.ticket.update({
@@ -462,27 +501,27 @@ export class TicketService {
         throw new BadRequestException('cant load ticket or userFile or user');
       }
 
-      if (ticket.userFile.user.id !== userId) {
+      if (ticket.userFile.user.id !== userId && ticket.workedById !== userId) {
         throw new ForbiddenException(
-          'thats not your ticket, you cant cancel it',
+          'tickets can only be canceled by the owner or the moderator working on it',
         );
       }
 
       await this.prisma.ticket.update({
         where: { id: id },
         data: {
-          status: 'CANCELED',
+          status: 'CLOSED',
         },
       });
 
-      if (ticket.workedById) {
+      if (ticket.workedById && ticket.workedById !== userId) {
         await this.NotificationService.createNotification(
           ticket.workedById,
           'SYSTEM',
           `The ticket with ID ${id} has been canceled by the user.`,
         );
       }
-      return `Ticket with ID ${id} has been canceled`;
+      return `Ticket with ID ${id} has been closed`;
     } catch (error) {
       throw new BadRequestException('Error canceling ticket', {
         cause: error,
@@ -490,7 +529,7 @@ export class TicketService {
       });
     }
   }
-
+  // für den cronJob es gibt keinen entpunkt
   async closeTicket(id: string) {
     try {
       const ticket = await this.prisma.ticket.update({

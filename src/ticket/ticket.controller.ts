@@ -80,6 +80,12 @@ export class TicketController {
     return this.ticketService.takeTicket(userId, id);
   }
 
+  @Post(':id/reopen')
+  @RequiredRoles(UserRoles.ADMIN, UserRoles.MODERATOR)
+  reopenTicket(@getCurrentUser('id') userId: string, @Param('id') id: string) {
+    return this.ticketService.reopenTicket(userId, id);
+  }
+
   @Post(':id/reassign')
   @RequiredRoles(UserRoles.ADMIN, UserRoles.MODERATOR)
   reassignTicket(
@@ -89,14 +95,9 @@ export class TicketController {
     return this.ticketService.reassignTicket(userId, id);
   }
 
-  @Post(':id/cancel')
+  @Post(':id/close')
   cancelTicket(@getCurrentUser('id') userId: string, @Param('id') id: string) {
     return this.ticketService.cancelTicket(userId, id);
-  }
-
-  @Post(':id/close')
-  closeTicket(@Param('id') id: string) {
-    return this.ticketService.closeTicket(id);
   }
 
   @PublicRoute()
