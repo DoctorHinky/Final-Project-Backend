@@ -379,6 +379,12 @@ export class TicketService {
             },
           },
           messages: {
+            select: {
+              id: true,
+              content: true,
+              createdAt: true,
+              authorId: true,
+            },
             include: {
               author: {
                 select: {

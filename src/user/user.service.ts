@@ -123,7 +123,13 @@ export class UserService {
 
   async updateMe(userId: string, updateData: UpdateMeDto) {
     try {
-      if (updateData.email !== undefined) {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      if (!user) throw new NotFoundException('User not found');
+
+      if (user.email !== updateData.email && updateData.email) {
         updateData.verified = false;
         await this.sendVerificationEmail(userId, updateData.email);
       }
@@ -229,6 +235,12 @@ export class UserService {
   }
 
   async updatePassword(userId: string, dto: updatePassword) {
+    if (dto.password === dto.newPassword) {
+      throw new BadRequestException(
+        'New password must be different from old password',
+      );
+    }
+
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
     });
@@ -424,6 +436,7 @@ export class UserService {
 
       return 'Account deactivated successfully';
     } catch (error) {
+      console.error('Error during account deactivation:', error);
       if (error instanceof BadRequestException) {
         throw error;
       } else {
