@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   Query,
   UploadedFiles,
@@ -24,7 +25,6 @@ export class TicketController {
   @Post('create')
   @UseInterceptors(
     FilesInterceptor('files', 5, {
-      // Limit to 5 files
       storage: memoryStorage(), // Store files in memory (RAM)
       limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB limit per file
     }),
@@ -67,6 +67,16 @@ export class TicketController {
   @Get(':id')
   getTicketById(@Param('id') id: string) {
     return this.ticketService.getTicketById(id);
+  }
+
+  @Patch(':id')
+  @RequiredRoles(UserRoles.ADMIN, UserRoles.MODERATOR)
+  updateTicketCategory(
+    @getCurrentUser('id') userId: string,
+    @Param('id') id: string,
+    @Body() dto: { category: string },
+  ) {
+    return this.ticketService.updateTicketCategory(userId, id, dto.category);
   }
 
   @Get('myTickets')

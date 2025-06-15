@@ -355,6 +355,38 @@ export class TicketService {
     }
   }
 
+  async updateTicketCategory(
+    userId: string,
+    id: string,
+    category: string,
+  ): Promise<Ticket | string> {
+    try {
+      const ticket = await this.prisma.ticket.findUnique({
+        where: { id: id },
+      });
+
+      if (!ticket) return 'No ticket under this id';
+
+      if (ticket.workedById && ticket.workedById !== userId) {
+        throw new ForbiddenException(
+          'You are not allowed to update the category of this ticket',
+        );
+      }
+
+      const updatedTicket = await this.prisma.ticket.update({
+        where: { id: id },
+        data: { category: this.getCategoryEnum(category) },
+      });
+
+      return updatedTicket;
+    } catch (error) {
+      throw new BadRequestException('Error updating ticket category', {
+        cause: error,
+        description: 'An error occurred while updating the ticket category',
+      });
+    }
+  }
+
   async getTicketById(id: string) {
     try {
       const ticket = await this.prisma.ticket.findUnique({

@@ -173,7 +173,7 @@ export class ConversationService {
           await limitConcurrency(5, deletePromises);
         }
       }
-
+      console.log('Conversation loaded successfully:', conversation);
       return conversation;
     } catch (error) {
       console.error('Failed to get conversation: ', error);
@@ -221,7 +221,9 @@ export class ConversationService {
             lastMessage: conversation.messages[0]
               ? {
                   id: conversation.messages[0].id,
-                  content: conversation.messages[0].content,
+                  content: conversation.messages[0].content
+                    ? decrypt(conversation.messages[0].content)
+                    : null,
                   createdAt: conversation.messages[0].createdAt,
                 }
               : null,

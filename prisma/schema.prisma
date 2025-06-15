@@ -293,6 +293,7 @@ enum TicketStatus {
   CLOSED
   IN_PROGRESS
   CANCELED
+  RESOLVED
 }
 
 model Chapter {
