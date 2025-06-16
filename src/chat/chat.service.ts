@@ -37,6 +37,7 @@ export class ChatService {
     userId: string,
     data: NewMessageDto & { file?: Express.Multer.File | undefined },
   ) {
+    console.log('Sending message:', data);
     try {
       const { message, file } = data;
       const type = this.evalType(data);

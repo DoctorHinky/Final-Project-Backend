@@ -8,6 +8,7 @@ import { CreateTicketDto, GetTicketQueryDto, TicketMessageDto } from './dto';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { Ticket, TicketCategory, TicketStatus, UserFile } from '@prisma/client';
 import { NotificationService } from 'src/notification/notification.service';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class TicketService {
@@ -186,7 +187,7 @@ export class TicketService {
     }
   }
 
-  async getTickets(query: GetTicketQueryDto) {
+  async getTickets(query: GetTicketQueryDto): Promise<Ticket[] | string> {
     try {
       const {
         page = 1,
@@ -204,34 +205,10 @@ export class TicketService {
           [sortBy]: sortDirection,
         },
         include: {
-          userFile: {
-            include: {
-              user: {
-                select: {
-                  id: true,
-                  username: true,
-                  email: true,
-                },
-              },
-            },
-          },
-          messages: {
-            select: {
-              id: true,
-              content: true,
-              createdAt: true,
-              author: {
-                select: {
-                  username: true,
-                },
-              },
-            },
-          },
           workedBy: {
             select: {
               id: true,
               username: true,
-              email: true,
             },
           },
           _count: {
@@ -242,8 +219,6 @@ export class TicketService {
           },
         },
       });
-
-      console.log('Tickets fetched:', tickets);
 
       if (!tickets || tickets.length === 0) {
         return 'Fetch successfully, but no tickets found';
@@ -428,16 +403,6 @@ export class TicketService {
             },
           },
           messages: {
-            select: {
-              id: true,
-              content: true,
-              createdAt: true,
-              author: {
-                select: {
-                  username: true,
-                },
-              },
-            },
             include: {
               author: {
                 select: {
@@ -454,9 +419,15 @@ export class TicketService {
           Files: true,
         },
       });
+      if (!ticket) {
+        throw new BadRequestException('No ticket found with this ID');
+      }
+      console.log('Ticket fetched:', ticket);
 
       return ticket;
     } catch (error) {
+      console.error('Error fetching ticket by ID:', error);
+
       throw new BadRequestException('Error fetching ticket', {
         cause: error,
         description: 'An error occurred while fetching the ticket by ID',
@@ -600,7 +571,7 @@ export class TicketService {
       });
     }
   }
-
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async cleanUpTicketModule() {
     try {
       const deleted: string[] = [];
