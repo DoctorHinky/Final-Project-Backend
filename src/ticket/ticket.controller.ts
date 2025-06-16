@@ -34,6 +34,7 @@ export class TicketController {
     @UploadedFiles() files: Express.Multer.File[],
     @Body() dto: CreateTicketDto,
   ) {
+    console.log('Creating ticket with userId:', userId);
     return this.ticketService.createTicket(userId, dto, files);
   }
 

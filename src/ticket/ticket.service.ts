@@ -215,6 +215,18 @@ export class TicketService {
               },
             },
           },
+          messages: {
+            select: {
+              id: true,
+              content: true,
+              createdAt: true,
+              author: {
+                select: {
+                  username: true,
+                },
+              },
+            },
+          },
           workedBy: {
             select: {
               id: true,
@@ -239,6 +251,7 @@ export class TicketService {
         return tickets;
       }
     } catch (error) {
+      console.error('Error fetching tickets:', error);
       throw new BadRequestException('Error fetching tickets', {
         cause: error,
         description: 'An error occurred while fetching tickets',
@@ -388,6 +401,8 @@ export class TicketService {
   }
 
   async getTicketById(id: string) {
+    console.log('Fetching ticket by ID:', id);
+
     try {
       const ticket = await this.prisma.ticket.findUnique({
         where: {
@@ -417,7 +432,11 @@ export class TicketService {
               id: true,
               content: true,
               createdAt: true,
-              authorId: true,
+              author: {
+                select: {
+                  username: true,
+                },
+              },
             },
             include: {
               author: {

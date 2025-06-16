@@ -49,30 +49,11 @@ export class ConversationService {
             { user1Id: target.id, user2Id: user.id },
           ],
         },
-        select: {
-          id: true,
-          user1Id: true,
-          user2Id: true,
-          createdAt: true,
-          updatedAt: true,
-          lastMessageAt: true,
-          messages: {
-            orderBy: { createdAt: 'desc' }, // neue Nachrichten zuletzt
-            select: {
-              id: true,
-              content: true,
-              messageType: true,
-              attachmentUrl: true,
-              isRead: true,
-              createdAt: true,
-              updatedAt: true,
-            },
-          },
-        },
+        select: { id: true, user1Id: true, user2Id: true },
       });
 
       if (existingConversation) {
-        return existingConversation;
+        return await this.getConversation(existingConversation.id, user.id);
       } else {
         const conversation = await this.prisma.conversation.create({
           data: {
@@ -98,6 +79,12 @@ export class ConversationService {
 
   async getConversation(conversationId: string, userId: string) {
     try {
+      console.log(
+        'Fetching conversation with ID:',
+        conversationId,
+        'for user:',
+        userId,
+      );
       const conversation = await this.prisma.conversation.findFirst({
         where: {
           id: conversationId,
