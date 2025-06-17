@@ -52,10 +52,12 @@ export class UserService {
 
   async getAllUsers(role: UserRoles) {
     if (role === UserRoles.ADMIN) {
-      return await this.prisma.user.findMany({});
+      return await this.prisma.user.findMany({
+        where: { NOT: { isDeleted: true } },
+      });
     } else if (role === UserRoles.MODERATOR) {
       return await this.prisma.user.findMany({
-        where: { NOT: { role: UserRoles.ADMIN } },
+        where: { NOT: { role: UserRoles.ADMIN, isDeleted: true } },
       });
     }
     throw new ForbiddenException('Unauthorized access, request denied');
