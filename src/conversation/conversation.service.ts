@@ -193,8 +193,17 @@ export class ConversationService {
 
       if (conversations.length === 0) {
         return [];
-      } else {
-        return conversations.map((conversation) => {
+      }
+      const enrichedConversations = await Promise.all(
+        conversations.map(async (conversation) => {
+          const unreadCount = await this.prisma.directMessage.count({
+            where: {
+              conversationId: conversation.id,
+              isRead: false,
+              senderId: { not: userId },
+            },
+          });
+
           const otherUser =
             conversation.user1.id === userId
               ? conversation.user2
@@ -215,9 +224,12 @@ export class ConversationService {
                 }
               : null,
             updatedAt: conversation.updatedAt,
+            unreadCount,
           };
-        });
-      }
+        }),
+      );
+
+      return enrichedConversations;
     } catch (error) {
       console.error('Failed to get all conversations:', error);
       throw new BadRequestException(

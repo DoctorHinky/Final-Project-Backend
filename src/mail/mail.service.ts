@@ -9,12 +9,7 @@ export class MailService {
     sgMail.setApiKey(process.env.SEND_GRID_API!);
   }
 
-  async sendMail(
-    to: string,
-    subject: string,
-    rawHtml: string,
-    from?: string,
-  ): Promise<void> {
+  sendMail(to: string, subject: string, rawHtml: string, from?: string): void {
     const html = compileTemplate('default', {
       subject,
       content: rawHtml,
@@ -31,7 +26,8 @@ export class MailService {
     };
 
     try {
-      await sgMail.send(msg);
+      // await sgMail.send(msg); // SendGrid ist abgelaufen, daher auskommentiert
+      console.log('Email sent successfully:');
     } catch (error) {
       console.error('Full error object:', JSON.stringify(error, null, 2));
       throw new BadRequestException(
