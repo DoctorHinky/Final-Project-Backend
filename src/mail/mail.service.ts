@@ -18,6 +18,7 @@ export class MailService {
       termsLink: 'https://deine-domain.de/nutzungsbedingungen', // Public Link
       year: new Date().getFullYear(),
     });
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const msg = {
       to,
       from: from || process.env.SYSTEM_EMAIL!,
@@ -27,7 +28,6 @@ export class MailService {
 
     try {
       // await sgMail.send(msg); // SendGrid ist abgelaufen, daher auskommentiert
-      console.log('Email sent successfully:');
     } catch (error) {
       console.error('Full error object:', JSON.stringify(error, null, 2));
       throw new BadRequestException(

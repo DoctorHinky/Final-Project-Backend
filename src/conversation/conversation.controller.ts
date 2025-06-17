@@ -14,6 +14,11 @@ export class ConversationController {
     return await this.conversationService.createConversation(userId, targetId);
   }
 
+  @Get('loadPreview')
+  async loadAllConversations(@getCurrentUser('id') userId: string) {
+    return await this.conversationService.getAllConversations(userId);
+  }
+
   @Get(':conversationId')
   async loadConversation(
     @getCurrentUser('id') userId: string,
@@ -23,11 +28,6 @@ export class ConversationController {
       conversationId,
       userId,
     );
-  }
-
-  @Get('loadPreview')
-  async loadAllConversations(@getCurrentUser('id') userId: string) {
-    return await this.conversationService.getAllConversations(userId);
   }
 
   @Delete(':conversationId')

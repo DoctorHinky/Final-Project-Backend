@@ -79,12 +79,8 @@ export class ConversationService {
 
   async getConversation(conversationId: string, userId: string) {
     try {
-      console.log(
-        'Fetching conversation with ID:',
-        conversationId,
-        'for user:',
-        userId,
-      );
+      console.log(`Loading conversation ${conversationId} for user ${userId}`);
+
       const conversation = await this.prisma.conversation.findFirst({
         where: {
           id: conversationId,
