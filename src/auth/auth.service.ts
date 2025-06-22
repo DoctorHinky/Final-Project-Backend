@@ -101,13 +101,14 @@ export class AuthService {
 
       return tokens;
     } catch (err) {
+      console.error('Error during user registration:', err);
       if (err instanceof Prisma.PrismaClientKnownRequestError) {
         if (err.code === 'P2002') {
           throw new ForbiddenException(
             'And user with this some of choosen credentials already exists',
           );
         } else {
-          throw new Error('Unknow error: ' + err.message);
+          throw new BadRequestException('Unknow error: ', { cause: err });
         }
       }
     }
@@ -203,7 +204,6 @@ export class AuthService {
     });
     const verificationLink = `${this.config.get<string>('FRONTEND_URL')}/verify-email?token=${token}`;
     await this.mailService.sendEmailVerification(email, { verificationLink }); // In der mail muss der normal token stehen, damit der User ihn in der URL verwenden kann
-    console.log(`Verification email sent to ${email}`);
     return { message: 'email for verification has benn sendet' };
   }
 
@@ -235,9 +235,7 @@ export class AuthService {
         }),
       ).catch(() => null);
 
-      if (!matched) {
-        throw new ForbiddenException('Invalid or expired token');
-      }
+      if (!matched) throw new ForbiddenException('Invalid or expired token');
 
       await this.prisma.user.update({
         where: { id: payload.sub },

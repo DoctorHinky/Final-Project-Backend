@@ -26,9 +26,13 @@ export class HistoryService {
               id: true,
               title: true,
               quickDescription: true,
+              publishedAt: true,
+              tags: true,
+              category: true,
               author: {
                 select: {
                   username: true,
+                  isPedagogicalAuthor: true,
                 },
               },
             },
@@ -54,9 +58,15 @@ export class HistoryService {
             postId: item.postId,
             readAt: item.readAt,
             solvedAt: item.solvedAt ?? null,
+            publishedAt: item.post.publishedAt,
             postTitle: item.post.title,
+            postCategory: item.post.category,
+            postTags: item.post.tags.map((tag) => tag),
             postQuickDescription: item.post.quickDescription,
-            postAuthor: item.post.author?.username,
+            author: {
+              username: item.post.author?.username,
+              isPedagogicalAuthor: item.post.author?.isPedagogicalAuthor,
+            },
           };
         }),
       };

@@ -367,7 +367,11 @@ export class UserService {
 
   async deleteMyAccount(userId: string, dto: DeleteAccountDto) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-
+    if (!user) throw new NotFoundException('User not found');
+    const match = await verifyPassword(dto.password, user?.password);
+    if (!match) {
+      throw new BadRequestException('Accesss denied, password is incorrect');
+    }
     if (!user) {
       throw new BadRequestException(
         'Unexprected error, cant delete your account database error',

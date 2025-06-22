@@ -82,9 +82,12 @@ export class PostService {
           category: true,
           tags: true,
           createdAt: true,
+          published: true,
+          publishedAt: true,
           author: {
             select: {
               username: true,
+              profilePicture: true,
             },
           },
         },
@@ -102,7 +105,12 @@ export class PostService {
             title: post.title,
             quickDescription: post.quickDescription,
             image: post.image,
-            author: post.author?.username,
+            publishedAt: post.publishedAt,
+            published: post.published,
+            author: {
+              username: post.author?.username,
+              profilePicture: post.author?.profilePicture,
+            },
             category: post.category,
             createdAt: post.createdAt,
             tags: post.tags || [],
@@ -148,6 +156,7 @@ export class PostService {
           author: {
             select: {
               username: true,
+              profilePicture: true,
             },
           },
           chapters: {

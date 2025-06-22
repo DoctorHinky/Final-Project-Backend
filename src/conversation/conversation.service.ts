@@ -77,10 +77,34 @@ export class ConversationService {
     }
   }
 
+  async getTotalUnreadCount(userId: string): Promise<number> {
+    try {
+      const count = await this.prisma.directMessage.count({
+        where: {
+          isRead: false,
+          senderId: { not: userId },
+          isDeletedForReceiver: false,
+          conversation: {
+            OR: [{ user1Id: userId }, { user2Id: userId }],
+          },
+        },
+      });
+
+      if (count < 0) {
+        throw new BadRequestException('Unread count cannot be negative');
+      }
+
+      console.log(`Total unread messages for user ${userId}: ${count}`);
+
+      return count;
+    } catch (error) {
+      console.error('Failed to get unread count:', error);
+      return 0; // Fallback
+    }
+  }
+
   async getConversation(conversationId: string, userId: string) {
     try {
-      console.log(`Loading conversation ${conversationId} for user ${userId}`);
-
       const conversation = await this.prisma.conversation.findFirst({
         where: {
           id: conversationId,
@@ -151,12 +175,15 @@ export class ConversationService {
 
         if (messagesToDelete.length > 0) {
           const deletePromises = messagesToDelete.map((message) => {
+            console.log(
+              `Deleting message ${message.id} from conversation ${conversationId}`,
+            );
+
             return () => this.MsgService.deleteMessageInternal(message.id);
           });
           await limitConcurrency(5, deletePromises);
         }
       }
-      console.log('Conversation loaded successfully:', conversation);
       return conversation;
     } catch (error) {
       console.error('Failed to get conversation: ', error);

@@ -14,6 +14,11 @@ export class ConversationController {
     return await this.conversationService.createConversation(userId, targetId);
   }
 
+  @Get('count')
+  async getConversationCount(@getCurrentUser('id') userId: string) {
+    return await this.conversationService.getTotalUnreadCount(userId);
+  }
+
   @Get('loadPreview')
   async loadAllConversations(@getCurrentUser('id') userId: string) {
     return await this.conversationService.getAllConversations(userId);

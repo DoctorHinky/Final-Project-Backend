@@ -60,7 +60,7 @@ export class NotificationService {
       if (!user) throw new NotFoundException('User not found');
 
       const notifications = await this.prisma.notification.findMany({
-        where: { userId: user.id, isRead: false },
+        where: { userId: user.id },
         orderBy: { createdAt: 'desc' },
       });
 
@@ -72,6 +72,7 @@ export class NotificationService {
           type: notification.type,
           content: notification.content,
           createdAt: notification.createdAt,
+          isRead: notification.isRead,
         }));
       }
     } catch (error) {

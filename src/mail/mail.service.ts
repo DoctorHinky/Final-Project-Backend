@@ -1,15 +1,49 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import * as sgMail from '@sendgrid/mail';
 import { compileTemplate } from './mail.helper';
 import { EMAIL_TEMPLATES, BaseEmailData } from './email.types';
+import { MailerSend, EmailParams, Recipient } from 'mailersend';
 
 @Injectable()
 export class MailService {
+  private mailerSend: MailerSend;
   constructor() {
-    sgMail.setApiKey(process.env.SEND_GRID_API!);
+    this.mailerSend = new MailerSend({
+      apiKey: process.env.MAILERSEND_API_KEY || '',
+    });
   }
 
-  sendMail(to: string, subject: string, rawHtml: string, from?: string): void {
+  private async sendViaMailerSend(
+    to: string,
+    subject: string,
+    html: string,
+    from?: string,
+  ): Promise<void> {
+    const recipients = [new Recipient(to, '')];
+    const senderEmail = from || process.env.SYSTEM_EMAIL!;
+    const sender = { email: senderEmail, name: '' }; // Optionally set a name
+    const emailParams = new EmailParams()
+      .setFrom(sender)
+      .setTo(recipients)
+      .setSubject(subject)
+      .setHtml(html);
+
+    try {
+      await this.mailerSend.email.send(emailParams);
+    } catch (error) {
+      console.error('Full error object:', error);
+      throw new BadRequestException(
+        'Failed to send email',
+        'There was an error while trying to send the email.',
+      );
+    }
+  }
+
+  async sendMail(
+    to: string,
+    subject: string,
+    rawHtml: string,
+    from?: string,
+  ): Promise<void> {
     const html = compileTemplate('default', {
       subject,
       content: rawHtml,
@@ -18,16 +52,9 @@ export class MailService {
       termsLink: 'https://deine-domain.de/nutzungsbedingungen', // Public Link
       year: new Date().getFullYear(),
     });
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const msg = {
-      to,
-      from: from || process.env.SYSTEM_EMAIL!,
-      subject,
-      html,
-    };
 
     try {
-      // await sgMail.send(msg); // SendGrid ist abgelaufen, daher auskommentiert
+      await this.sendViaMailerSend(to, subject, html, from);
     } catch (error) {
       console.error('Full error object:', JSON.stringify(error, null, 2));
       throw new BadRequestException(
@@ -59,15 +86,9 @@ export class MailService {
       year: new Date().getFullYear(),
     });
 
-    const msg = {
-      to,
-      from: from || process.env.SYSTEM_EMAIL!,
-      subject: config.subject,
-      html,
-    };
-
     try {
-      await sgMail.send(msg);
+      await this.sendViaMailerSend(to, config.subject, html, from);
+      console.log(`Email sent to ${to} with`);
     } catch (error) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       console.error('Full error object:', error?.response?.body || error);
@@ -124,7 +145,6 @@ export class MailService {
     data: { verificationLink: string },
     from?: string,
   ): Promise<void> {
-    console.log('Sending email verification to:', to);
     return this.sendTemplatedEmail(to, 'EMAIL_VERIFICATION', data, from);
   }
 
@@ -161,15 +181,15 @@ export class MailService {
     from?: string,
   ) {
     const fromEmail = from || process.env.SYSTEM_EMAIL!;
-    const messages = recipients.map((email) => ({
-      to: email,
-      from: fromEmail,
-      subject,
-      html,
-    }));
 
     try {
-      await sgMail.send(messages, true); // true = send as batch
+      for (const recipient of recipients) {
+        try {
+          await this.sendViaMailerSend(recipient, subject, html, fromEmail);
+        } catch (error) {
+          console.error(`Failed to send newsletter to ${recipient}:`, error);
+        }
+      }
       console.log(`sended ${recipients.length} newsletters.`);
     } catch (err) {
       console.error('errors while ', err);

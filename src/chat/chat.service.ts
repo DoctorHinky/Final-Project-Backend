@@ -9,12 +9,14 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { MessageType } from '@prisma/client';
 import { decrypt, encrypt } from 'src/common/utilitys/encryptoin';
+import { NotificationService } from 'src/notification/notification.service';
 
 @Injectable()
 export class ChatService {
   constructor(
     private prisma: PrismaService,
     private cloudinary: CloudinaryService,
+    private notificationService: NotificationService,
   ) {}
 
   static DELETE_MESSAGE = 'Die Nachricht wurde gelöscht';
@@ -51,6 +53,15 @@ export class ChatService {
       if (!conversation) {
         throw new NotFoundException('Conversation not found');
       }
+      const theOther =
+        conversation.user1Id === userId
+          ? conversation.user2Id
+          : conversation.user1Id;
+      const other = await this.prisma.user.findUnique({
+        where: { id: theOther },
+        select: { username: true },
+      });
+
       let fileUrl: string | null = null;
       let fileId: string | null = null;
       if (file) {
@@ -81,6 +92,12 @@ export class ChatService {
           senderId: userId,
         },
       });
+
+      await this.notificationService.createNotification(
+        theOther,
+        'NEW_MESSAGE',
+        `you got a new message from ${other?.username}`,
+      );
 
       return {
         message: {
@@ -157,9 +174,10 @@ export class ChatService {
       const updatedMsg = await this.prisma.directMessage.update({
         where: { id: messageId },
         data: {
-          content: data.message ?? message.content,
+          content: data.message ? encrypt(data.message) : message.content,
           attachmentUrl: fileUrl,
           attachmentPublicId: fileId,
+          isEdited: true,
           messageType: type,
         },
       });
@@ -213,7 +231,8 @@ export class ChatService {
         await this.prisma.directMessage.update({
           where: { id: messageId },
           data: {
-            content: ChatService.DELETE_MESSAGE,
+            content: encrypt(ChatService.DELETE_MESSAGE),
+            isEdited: false,
             attachmentUrl: null,
             attachmentPublicId: null,
           },
@@ -245,6 +264,12 @@ export class ChatService {
         where: { id: messageId },
       });
     } catch (error) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      if (error.code === 'P2025') {
+        console.warn(`Message with ID ${messageId} does not exist.`);
+        return null; // Oder eine andere geeignete Aktion, z.B. eine Erfolgsmeldung zurückgeben
+      }
+
       console.error('Failed to delete message internally:', error);
       throw error;
     }

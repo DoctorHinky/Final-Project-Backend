@@ -549,6 +549,7 @@ model FeedbackResponse {
 enum NotificationType {
   FRIEND_REQUEST // Freundschaftsanfrage
   FRIENDSHIP_ACCEPTED // Freundschaft angenommen
+  FRIENDSHIP_REJECTED // Freundschaft abgelehnt
   COMMENT // Antwort auf Kommentar / Kommentar auf Post
   NEW_MESSAGE // Neue Nachricht mit freunden etc 
   APPLICATION_STATUS_CHANGE // Statusänderung der Bewerbung
@@ -612,6 +613,7 @@ model DirectMessage {
 
   // Nachrichteninhalt
   content String?
+  isEdited Boolean @default(false) // ob die Nachricht bearbeitet wurde
 
   // Optional: Nachrichtentyp für spätere Erweiterungen (Text, Bild, etc.)
   messageType MessageType @default(TEXT)

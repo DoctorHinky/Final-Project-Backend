@@ -197,8 +197,25 @@ export class TicketService {
         sortDirection = 'desc',
       } = query;
 
+      const getWhereClause = () => {
+        switch (status) {
+          case 'OPEN':
+            return { status: TicketStatus.OPEN };
+            break;
+          case 'IN_PROGRESS':
+            return { status: TicketStatus.IN_PROGRESS };
+            break;
+          case 'CLOSED':
+            return { status: TicketStatus.CLOSED };
+            break;
+          default:
+            return { NOT: { status: TicketStatus.CLOSED } };
+            break;
+        }
+      };
+
       const tickets = await this.prisma.ticket.findMany({
-        where: { status: status ?? undefined },
+        where: getWhereClause(),
         take: limit,
         skip: (page - 1) * limit,
         orderBy: {
@@ -388,9 +405,7 @@ export class TicketService {
             include: {
               user: {
                 select: {
-                  id: true,
                   username: true,
-                  email: true,
                 },
               },
             },

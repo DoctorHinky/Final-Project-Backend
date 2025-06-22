@@ -91,9 +91,7 @@ export class FriendService {
   async getAllSendetRequests(targetId: string) {
     try {
       return await this.prisma.friendRequest.findMany({
-        where: {
-          senderId: targetId,
-        },
+        where: { senderId: targetId },
         include: {
           receiver: true,
         },
@@ -299,6 +297,11 @@ export class FriendService {
       await this.prisma.$transaction(async (prisma) => {
         const request = await prisma.friendRequest.findUnique({
           where: { id: requestId },
+          include: {
+            sender: {
+              select: { username: true },
+            },
+          },
         });
 
         if (!request) {
@@ -328,8 +331,8 @@ export class FriendService {
 
         await this.notificationService.createNotification(
           request.senderId,
-          'FRIEND_REQUEST_REJECTED',
-          'Your friend request has been rejected.',
+          'FRIENDSHIP_REJECTED',
+          `Your friend request to ${request.sender.username} has been rejected.`,
         );
 
         return {
@@ -337,6 +340,7 @@ export class FriendService {
         };
       });
     } catch (error) {
+      console.error('Error rejecting friend request:', error);
       throw new BadRequestException('Failed to reject friend request', {
         cause: error,
         description: 'Unexpected error occurred',
