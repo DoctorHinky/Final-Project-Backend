@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
@@ -603,7 +604,6 @@ export class PostService {
       }
 
       let category: PostCategory;
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       switch (updateData.category?.toUpperCase()) {
         case 'EDUCATION':
           category = PostCategory.EDUCATION;
@@ -661,6 +661,13 @@ export class PostService {
       ) {
         updateData.published = false;
         updateData.publishedAt = null;
+      }
+
+      if (typeof updateData.tags === 'string') {
+        updateData.tags = updateData.tags
+          .split(',')
+          .map((tag: string) => tag.trim())
+          .filter((tag: string) => tag.length > 0);
       }
 
       const updatedPost = await this.prisma.post.update({

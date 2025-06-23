@@ -671,13 +671,14 @@ export class TicketService {
     try {
       await this.prisma.ticketFile.deleteMany({});
       await this.prisma.ticket.deleteMany({});
-      await this.prisma.history.deleteMany({});
-      await this.prisma.post.deleteMany({});
-      await this.prisma.friendRequest.deleteMany({});
-      await this.prisma.friendship.deleteMany({});
-      await this.prisma.application.deleteMany({});
-      await this.prisma.userFile.deleteMany({});
-      await this.prisma.user.deleteMany({});
+      // await this.prisma.history.deleteMany({});
+      // await this.prisma.post.deleteMany({});
+      // await this.prisma.friendRequest.deleteMany({});
+      // await this.prisma.friendship.deleteMany({});
+      // await this.prisma.application.deleteMany({});
+      // await this.prisma.userFile.deleteMany({});
+      // await this.prisma.user.deleteMany({});
+      // await this.prisma.comment.deleteMany({});
 
       return 'Killswitch successfully, all data deleted';
     } catch (error) {
