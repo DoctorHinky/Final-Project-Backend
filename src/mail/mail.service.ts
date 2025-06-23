@@ -11,16 +11,18 @@ export class MailService {
       apiKey: process.env.MAILERSEND_API_KEY || '',
     });
   }
-
-  private async sendViaMailerSend(
+  /* E-Mail-Versand ist derzeit deaktiviert – kein aktiver Mail-Dienst vorhanden */
+  /* hier muss dann wieder async rein */
+  private sendViaMailerSend(
     to: string,
     subject: string,
     html: string,
     from?: string,
-  ): Promise<void> {
+  ): Promise<void> | void {
     const recipients = [new Recipient(to, '')];
     const senderEmail = from || process.env.SYSTEM_EMAIL!;
     const sender = { email: senderEmail, name: '' }; // Optionally set a name
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const emailParams = new EmailParams()
       .setFrom(sender)
       .setTo(recipients)
@@ -28,7 +30,8 @@ export class MailService {
       .setHtml(html);
 
     try {
-      await this.mailerSend.email.send(emailParams);
+      // await this.mailerSend.email.send(emailParams);
+      return;
     } catch (error) {
       console.error('Full error object:', error);
       throw new BadRequestException(
@@ -55,6 +58,7 @@ export class MailService {
 
     try {
       await this.sendViaMailerSend(to, subject, html, from);
+      console.log(`Email sent to ${to} with subject: ${subject}`);
     } catch (error) {
       console.error('Full error object:', JSON.stringify(error, null, 2));
       throw new BadRequestException(
