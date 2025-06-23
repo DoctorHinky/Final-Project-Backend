@@ -96,7 +96,7 @@ export class ChatService {
       await this.notificationService.createNotification(
         theOther,
         'NEW_MESSAGE',
-        `you got a new message from ${other?.username}`,
+        `Du hast eine neue Nachricht von: ${other?.username}`,
       );
 
       return {

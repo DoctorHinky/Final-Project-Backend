@@ -3,7 +3,9 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
 import { NotificationType } from '@prisma/client';
+import { limitConcurrency } from 'src/common/utilitys/promise-limiter';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
@@ -168,6 +170,30 @@ export class NotificationService {
       throw new BadRequestException(
         'Failed to delete all notifications. Please try again later.',
       );
+    }
+  }
+
+  @Cron('0 */6 * * *') // alle 6 Stunden
+  async deleteReadNotifications(): Promise<void> {
+    try {
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const notificationsToDelete = await this.prisma.notification.findMany({
+        where: {
+          isRead: true,
+          updatedAt: { lt: twentyFourHoursAgo },
+        },
+        select: { id: true },
+      });
+
+      if (notificationsToDelete.length === 0) return;
+
+      const deleteTasks = notificationsToDelete.map((notif) => async () => {
+        await this.prisma.notification.delete({ where: { id: notif.id } });
+      });
+
+      await limitConcurrency(5, deleteTasks);
+    } catch (error) {
+      console.error('❌ Failed to delete read notifications:', error);
     }
   }
 }

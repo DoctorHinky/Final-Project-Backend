@@ -564,6 +564,7 @@ model Notification {
   type      NotificationType
   content   String // Inhalt der Benachrichtigung
   isRead    Boolean          @default(false) // ob die Benachrichtigung gelesen wurde
+  updatedAt DateTime       @updatedAt // wann die Benachrichtigung aktualisiert wurde
   createdAt DateTime         @default(now())
 }
 

@@ -148,7 +148,7 @@ export class TicketService {
         await this.NotificationService.createNotification(
           targetTicket.userFile.user.id,
           'TICKET_UPDATE',
-          `You got a new message in your ticket: ${targetTicket.title}`,
+          `Auf dein Ticket: ${targetTicket.title} wurde beantworted.`,
         );
       }
 
@@ -485,7 +485,7 @@ export class TicketService {
         await this.NotificationService.createNotification(
           ticket.workedById,
           'SYSTEM',
-          `The ticket with ID ${id} has been reopend, check out to find reason.`,
+          `Ein ticket von dir wurde wieder geöffnet, bitte schau es dir an.`,
         );
       }
       const newStatus =
@@ -555,7 +555,7 @@ export class TicketService {
         await this.NotificationService.createNotification(
           ticket.workedById,
           'SYSTEM',
-          `The ticket with ID ${id} has been canceled by the user.`,
+          `Das Ticket mit der ID ${id} wurde von ${ticket.userFile.user.username} geschlossen.`,
         );
       }
       return `Ticket with ID ${id} has been closed`;

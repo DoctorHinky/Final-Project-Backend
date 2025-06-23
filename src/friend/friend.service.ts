@@ -206,7 +206,7 @@ export class FriendService {
       await this.notificationService.createNotification(
         targetId,
         'FRIEND_REQUEST',
-        `${target.username} has sent you a friend request.`,
+        `${target.username} hat die eine Freundschaftsanfrage gesendet`,
       );
 
       return {
@@ -274,10 +274,17 @@ export class FriendService {
           where: { id: requestId },
         });
 
+        const name = await prisma.user.findUnique({
+          where: { id: request.senderId },
+          select: { username: true },
+        });
+
+        if (!name) throw new NotFoundException('Sender user not found');
+
         await this.notificationService.createNotification(
           request.senderId,
           'FRIENDSHIP_ACCEPTED',
-          'Your friend request has been accepted, you get a new friend!',
+          `${name.username} hat deine Freundschaftsanfrage angenommen, ihr seid nun Freunde!`,
         );
 
         return {
@@ -332,7 +339,7 @@ export class FriendService {
         await this.notificationService.createNotification(
           request.senderId,
           'FRIENDSHIP_REJECTED',
-          `Your friend request to ${request.sender.username} has been rejected.`,
+          `${request.sender.username} hat deine Freundschaftsanfrage abgelehnt.`,
         );
 
         return {
@@ -431,7 +438,7 @@ export class FriendService {
             await this.notificationService.createNotification(
               targetId,
               'SYSTEM',
-              `You have removed ${user.username} from your friends.`,
+              `${user.username} hat dich aus seiner Freundesliste entfernt.`,
             );
           }
         }

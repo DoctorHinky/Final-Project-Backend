@@ -345,7 +345,7 @@ export class ApplicationService {
       await this.notificationService.createNotification(
         application.userId,
         'APPLICATION_STATUS_CHANGE',
-        `Your application has been accepted, you get more information via email.`,
+        `Deine Bewerbung wurde angenommen Glückwunsch, ein Mitarbeiter wird sich per mail bei dir melden.`,
       );
 
       if (otherApplications.length > 0) {
@@ -459,7 +459,7 @@ export class ApplicationService {
         await this.notificationService.createNotification(
           application.userId,
           'APPLICATION_STATUS_CHANGE',
-          `Your application has been rejected, you get more information via email`,
+          `Deine Bewerbung wurde abgelehnt. Du kannst dich gerne erneut bewerben, wenn du möchtest.`,
         );
       }
 
@@ -570,7 +570,7 @@ export class ApplicationService {
       await this.notificationService.createNotification(
         target.id,
         'APPLICATION_STATUS_CHANGE',
-        `You have been blocked from sending applications, you get more information via email.`,
+        `Du wurdest von der Bewerbung ausgeschlossen. Weitere Information erhältst du per E-Mail.`,
       );
 
       return {
@@ -625,7 +625,7 @@ export class ApplicationService {
       await this.notificationService.createNotification(
         updatedUser.id,
         'APPLICATION_STATUS_CHANGE',
-        `You have been unblocked from sending applications.`,
+        `Du wurdest von der Bewerbung freigeschaltet. Du kannst nun wieder Bewerbungen senden.`,
       );
 
       return {
