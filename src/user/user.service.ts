@@ -120,7 +120,6 @@ export class UserService {
     });
     const verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
     await this.mailService.sendEmailVerification(email, { verificationLink }); // In der mail muss der normal token stehen, damit der User ihn in der URL verwenden kann
-    console.log(`Verification email sent to ${email}`);
     return { message: 'email for verification has benn sendet' };
   }
 
@@ -530,7 +529,7 @@ export class UserService {
       role === UserRoles.ADMIN &&
       user.createdAt > targetUser.createdAt
     ) {
-      console.log('es wird ausgelöst');
+      console.error('es wird ausgelöst');
       throw new ForbiddenException({
         message:
           'You can only delete admin profiles that are created after you, (system securety)',

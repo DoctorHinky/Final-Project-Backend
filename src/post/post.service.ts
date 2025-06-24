@@ -503,7 +503,6 @@ export class PostService {
         await this.quizService.createQuiz(newPost.id, updatedDTO.quiz, tx);
       }
 
-      console.log('newPost', newPost);
       return { message: 'Post created', postId: newPost.id, success: true };
     });
   }
@@ -987,8 +986,6 @@ export class PostService {
         data,
       );
 
-      console.log('updatedChapter', newChapter);
-
       return {
         message: 'Chapter updated',
         data: newChapter,
@@ -1076,7 +1073,6 @@ export class PostService {
     });
 
     const image = await this.chapterService.addImage(chapterId, file);
-    console.log('image', image);
     return {
       message: 'Image added to chapter',
       data: image,
@@ -1341,10 +1337,6 @@ export class PostService {
         const isAuthor = post.authorId === user.id;
         const isOrphaned = post.authorId === null;
 
-        console.log(
-          `ìsAdmin: ${isAdmin} \nisMod: ${isMod} \nisAuthor: ${isAuthor}\nisOrphaned: ${isOrphaned}`,
-        );
-
         if (!(isAuthor || (isOrphaned && (isAdmin || isMod)))) {
           throw new ForbiddenException('You are not the author of this post');
         }
@@ -1421,10 +1413,6 @@ export class PostService {
         const isMod = user.roles === UserRoles.MODERATOR;
         const isAuthor = post.authorId === user.id;
         const isOrphaned = post.authorId === null;
-
-        console.log(
-          `ìsAdmin: ${isAdmin} \nisMod: ${isMod} \nisAuthor: ${isAuthor}\nisOrphaned: ${isOrphaned}`,
-        );
 
         if (!isAuthor && !isAdmin && !isMod) {
           throw new ForbiddenException('You are not the author of this post');
@@ -1637,15 +1625,11 @@ export class PostService {
           publicId_image: chapter.publicId_image || null,
         };
 
-        console.log('updating chapter', chapter);
-
         await this.updateChapter(postId, user, clean, chapter.id); // ggf. File matchen
       } else {
         const file = files.find(
           (f) => f.fieldname === `chapterImage_${chapter.index}`,
         );
-
-        console.log('adding chapter', chapter);
 
         const clean = {
           id: chapter.id,
@@ -1692,9 +1676,6 @@ export class PostService {
     }
 
     if (Boolean(published) !== Boolean(post.published)) {
-      console.log(
-        `Post ${postId} publish state changed from ${post.published} to ${published}`,
-      );
       if (published === true || published === 'true') {
         await this.publishPost(user.id, postId);
       } else if (published === false || published === 'false') {

@@ -117,7 +117,6 @@ export class PostController {
     @Param('postId') postId: string,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    console.log('Adding post image', postId);
     return await this.PostService.addPostImage(user, postId, file);
   }
 
@@ -324,8 +323,6 @@ export class PostController {
   ) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument
     const postData = JSON.parse(postDataRaw);
-
-    console.log('data', postData);
 
     return this.PostService.updateFullPost({
       user,

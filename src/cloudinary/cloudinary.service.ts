@@ -38,15 +38,11 @@ export class CloudinaryService {
         actualBuffer = file.buffer;
       } else if (typeof file.buffer === 'object') {
         // Fall 2: JSON-artiges Objekt, das wie Buffer aussieht
-        console.log(
-          'file.buffer ist ein Objekt mit Indizes. Konvertiere zu Buffer.',
-        );
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
         const values = Object.values(file.buffer) as number[];
         actualBuffer = Buffer.from(values);
       } else if (typeof file.buffer === 'string') {
         // Fall 3: Vielleicht base64?
-        console.log('file.buffer ist ein String. Versuche als base64.');
         actualBuffer = Buffer.from(file.buffer, 'base64');
       } else {
         return reject(new Error('Invalid file buffer format.'));

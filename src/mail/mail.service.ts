@@ -58,7 +58,6 @@ export class MailService {
 
     try {
       await this.sendViaMailerSend(to, subject, html, from);
-      console.log(`Email sent to ${to} with subject: ${subject}`);
     } catch (error) {
       console.error('Full error object:', JSON.stringify(error, null, 2));
       throw new BadRequestException(
@@ -92,7 +91,6 @@ export class MailService {
 
     try {
       await this.sendViaMailerSend(to, config.subject, html, from);
-      console.log(`Email sent to ${to} with`);
     } catch (error) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       console.error('Full error object:', error?.response?.body || error);
@@ -194,7 +192,6 @@ export class MailService {
           console.error(`Failed to send newsletter to ${recipient}:`, error);
         }
       }
-      console.log(`sended ${recipients.length} newsletters.`);
     } catch (err) {
       console.error('errors while ', err);
       throw new BadRequestException('Failed to send newsletter', {

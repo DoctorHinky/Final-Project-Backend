@@ -291,7 +291,6 @@ export class AuthService {
       username: user.username,
       resetLink,
     });
-    console.log(`Password reset email sent to ${user.email}`);
     return { message: 'Password reset email sent' };
   }
 

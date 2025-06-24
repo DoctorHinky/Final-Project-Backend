@@ -16,22 +16,15 @@ export class PostUploadInterceptor implements NestInterceptor {
     context: ExecutionContext,
     next: CallHandler<any>,
   ): Observable<any> {
-    console.log('PostUploadInterceptor called');
     const request = context.switchToHttp().getRequest();
     const body = request.body;
-    console.log('context: ', context);
-    console.log('body: ', body);
     try {
       body.ageRestriction = parseInt(body.ageRestriction);
       body.tags = Array.isArray(body.tags) ? body.tags : [body.tags];
-      console.log('chapters: ', body.chapters);
-      console.log('quiz: ', body.quiz);
       body.chapters = JSON.parse(body.chapters || '[]');
       body.quiz = JSON.parse(body.quiz || '{}');
-
-      console.log('parsed body', body);
     } catch (err) {
-      console.log('Error parsing body', err);
+      console.error('Error parsing body', err);
       throw new BadRequestException('Parsing Error in body', {
         cause: err,
         description:

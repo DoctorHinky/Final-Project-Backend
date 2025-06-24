@@ -86,7 +86,6 @@ export class ApplicationService {
 
       for (const [category, fileArray] of Object.entries(files)) {
         if (!fileArray || fileArray.length === 0) {
-          console.log(`No files for category: ${category}`);
           continue;
         }
 
@@ -721,7 +720,6 @@ export class ApplicationService {
           });
 
           deletions++;
-          console.log(`Successfully deleted application ${application.id}`);
         } catch (err) {
           console.error(`Error deleting application ${application.id}:`, err);
         }

@@ -94,8 +94,6 @@ export class ConversationService {
         throw new BadRequestException('Unread count cannot be negative');
       }
 
-      console.log(`Total unread messages for user ${userId}: ${count}`);
-
       return count;
     } catch (error) {
       console.error('Failed to get unread count:', error);
@@ -175,10 +173,6 @@ export class ConversationService {
 
         if (messagesToDelete.length > 0) {
           const deletePromises = messagesToDelete.map((message) => {
-            console.log(
-              `Deleting message ${message.id} from conversation ${conversationId}`,
-            );
-
             return () => this.MsgService.deleteMessageInternal(message.id);
           });
           await limitConcurrency(5, deletePromises);

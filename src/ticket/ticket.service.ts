@@ -393,8 +393,6 @@ export class TicketService {
   }
 
   async getTicketById(id: string) {
-    console.log('Fetching ticket by ID:', id);
-
     try {
       const ticket = await this.prisma.ticket.findUnique({
         where: {
@@ -437,7 +435,6 @@ export class TicketService {
       if (!ticket) {
         throw new BadRequestException('No ticket found with this ID');
       }
-      console.log('Ticket fetched:', ticket);
 
       return ticket;
     } catch (error) {
