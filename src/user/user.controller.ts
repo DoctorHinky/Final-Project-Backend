@@ -15,6 +15,7 @@ import { RequiredRoles } from 'src/common/decorators/roles.decorator';
 import { getCurrentUser } from 'src/common/decorators';
 import {
   DeleteAccountDto,
+  DeleteMyAccountDto,
   UpdateMeDto,
   updatePassword,
   UpdateUserDto,
@@ -136,7 +137,7 @@ export class UserController {
   @Patch('deleteMyAccount')
   deleteMyAccount(
     @getCurrentUser('id') userId: string,
-    @Body() dto: DeleteAccountDto,
+    @Body() dto: DeleteMyAccountDto,
   ) {
     return this.userService.deleteMyAccount(userId, dto);
   }
