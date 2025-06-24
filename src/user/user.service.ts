@@ -11,6 +11,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { omit } from 'lodash';
 import {
   DeleteAccountDto,
+  DeleteMyAccountDto,
   UpdateMeDto,
   updatePassword,
   UpdateUserDto,
@@ -365,7 +366,7 @@ export class UserService {
     }
   }
 
-  async deleteMyAccount(userId: string, dto: DeleteAccountDto) {
+  async deleteMyAccount(userId: string, dto: DeleteMyAccountDto) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
     const match = await verifyPassword(dto.password, user?.password);

@@ -57,8 +57,8 @@ export class ChatService {
         conversation.user1Id === userId
           ? conversation.user2Id
           : conversation.user1Id;
-      const other = await this.prisma.user.findUnique({
-        where: { id: theOther },
+      const sender = await this.prisma.user.findUnique({
+        where: { id: userId },
         select: { username: true },
       });
 
@@ -96,7 +96,7 @@ export class ChatService {
       await this.notificationService.createNotification(
         theOther,
         'NEW_MESSAGE',
-        `Du hast eine neue Nachricht von: ${other?.username}`,
+        `Du hast eine neue Nachricht von: ${sender?.username}`,
       );
 
       return {

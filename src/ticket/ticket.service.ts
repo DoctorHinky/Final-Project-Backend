@@ -669,7 +669,7 @@ export class TicketService {
 
   async killswitch() {
     try {
-      await this.prisma.ticketFile.deleteMany({});
+      // await this.prisma.ticketFile.deleteMany({});
       await this.prisma.ticket.deleteMany({});
       // await this.prisma.history.deleteMany({});
       // await this.prisma.post.deleteMany({});
