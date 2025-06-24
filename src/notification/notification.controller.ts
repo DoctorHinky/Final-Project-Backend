@@ -32,6 +32,12 @@ export class NotificationController {
   markAllNotificationsAsRead(@getCurrentUser('id') userId: string) {
     return this.notificationService.markAllNotificationsAsRead(userId);
   }
+  @Delete('all')
+  deleteAllNotifications(@getCurrentUser('id') userId: string) {
+    return this.notificationService.deleteAllNotifications(userId);
+  }
+
+  // die reihenfolge der endpoints ist wichtig, damit die spezifischen Endpunkte vor den allgemeinen Endpunkten geprüft werden
 
   @Delete(':id')
   deleteNotification(
@@ -39,10 +45,5 @@ export class NotificationController {
     @Param('id') notificationId: string,
   ) {
     return this.notificationService.deleteNotification(userId, notificationId);
-  }
-
-  @Delete('all')
-  deleteAllNotifications(@getCurrentUser('id') userId: string) {
-    return this.notificationService.deleteAllNotifications(userId);
   }
 }
