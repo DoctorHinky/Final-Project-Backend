@@ -17,7 +17,8 @@ async function bootstrap() {
 
   // das öffnet die API für alle Domains
   app.enableCors({
-    origin: '*',
+    origin: 'https://learn-to-grow.onrender.com',
+    credentials: true,
   });
   app.useGlobalFilters(new JwtExceptionFilter(), new MulterExceptionFilter());
   app.useGlobalPipes(
